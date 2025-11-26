@@ -13,10 +13,10 @@
 - [ ] Ensure all entities are scoped by workspace (no cross-tenant data leakage).
 
 ### 3. Auth & RBAC
-- [ ] Implement `/auth/register` and `/auth/login` (email + password).
-- [ ] Hash passwords with bcrypt, store in DB.
-- [ ] Generate access + refresh tokens (JWT) with secure secrets and expiry.
-- [ ] Implement `/auth/refresh` and `/auth/logout` endpoints.
+- [x] Implement `/auth/register` and `/auth/login` (email + password).
+- [x] Hash passwords with bcrypt, store in DB.
+- [x] Generate access + refresh tokens (JWT) with secure secrets and expiry.
+- [x] Implement `/auth/refresh` and `/auth/logout` endpoints.
 - [ ] Implement `isAuthenticated` + `isWorkspaceMember` middleware.
 - [ ] Implement role-aware middleware `hasRole('OWNER'|'ADMIN'|'MEMBER')`.
 - [ ] Protect workspace/board/card routes with appropriate auth + role checks.

@@ -59,6 +59,15 @@ VITE_BACKEND_URL="http://localhost:4000"
   - `JWT_ACCESS_TOKEN_SECRET`
   - `JWT_REFRESH_TOKEN_SECRET`
 
+### Auth Endpoints (Backend)
+
+All routes are prefixed with `/api`:
+
+- `POST /api/auth/register` – Register a new user (email, password, optional name), returns access + refresh tokens.
+- `POST /api/auth/login` – Login with email/password, returns access + refresh tokens.
+- `POST /api/auth/refresh` – Exchange a refresh token for a new access + refresh pair.
+- `POST /api/auth/logout` – Stateless logout (client should discard tokens).
+
 ### Database & Prisma
 
 To set up the local PostgreSQL database and Prisma schema:
