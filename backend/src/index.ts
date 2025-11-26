@@ -2,6 +2,13 @@ import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import dotenv from 'dotenv';
 import app from './app';
+import {
+  authenticateSocket,
+  verifyWorkspaceAccess,
+  verifyBoardAccess,
+  ROOM_PREFIXES,
+  AuthenticatedSocket,
+} from './lib/socket';
 
 dotenv.config();
 
@@ -24,20 +31,69 @@ if (missingEnvVars.length > 0) {
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   cors: {
-    origin: '*',
+    origin: process.env.FRONTEND_URL || '*',
+    credentials: true,
   },
 });
 
-io.on('connection', (socket) => {
-  // Workspace and board rooms will be like workspace:{id}, board:{id}
-  socket.on('join-room', (room: string) => {
-    socket.join(room);
+// Apply authentication middleware
+io.use(authenticateSocket);
+
+io.on('connection', async (socket: AuthenticatedSocket) => {
+  if (!socket.user) {
+    socket.disconnect();
+    return;
+  }
+
+  console.log(`Socket connected: ${socket.user.userId}`);
+
+  // Join workspace room
+  socket.on('join-workspace', async (workspaceId: string) => {
+    const hasAccess = await verifyWorkspaceAccess(socket, workspaceId);
+    if (hasAccess) {
+      const room = `${ROOM_PREFIXES.WORKSPACE}${workspaceId}`;
+      socket.join(room);
+      console.log(`Socket ${socket.user?.userId} joined ${room}`);
+    } else {
+      socket.emit('error', { message: 'Access denied to workspace' });
+    }
   });
 
-  socket.on('leave-room', (room: string) => {
+  // Leave workspace room
+  socket.on('leave-workspace', (workspaceId: string) => {
+    const room = `${ROOM_PREFIXES.WORKSPACE}${workspaceId}`;
     socket.leave(room);
+    console.log(`Socket ${socket.user?.userId} left ${room}`);
+  });
+
+  // Join board room
+  socket.on('join-board', async (boardId: string) => {
+    const hasAccess = await verifyBoardAccess(socket, boardId);
+    if (hasAccess) {
+      const room = `${ROOM_PREFIXES.BOARD}${boardId}`;
+      socket.join(room);
+      console.log(`Socket ${socket.user?.userId} joined ${room}`);
+    } else {
+      socket.emit('error', { message: 'Access denied to board' });
+    }
+  });
+
+  // Leave board room
+  socket.on('leave-board', (boardId: string) => {
+    const room = `${ROOM_PREFIXES.BOARD}${boardId}`;
+    socket.leave(room);
+    console.log(`Socket ${socket.user?.userId} left ${room}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`Socket disconnected: ${socket.user?.userId}`);
   });
 });
+
+// Export io instance for use in services
+export { io };
+import { setSocketIO } from './lib/socketEvents';
+setSocketIO(io);
 
 const PORT = Number.parseInt(process.env.PORT || '4000', 10);
 

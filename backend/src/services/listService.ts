@@ -1,4 +1,8 @@
 import { prisma } from '../lib/prisma';
+import {
+  broadcastToBoard,
+  SOCKET_EVENTS,
+} from '../lib/socketEvents';
 
 export interface CreateListInput {
   title: string;
@@ -41,6 +45,9 @@ export async function createList(input: CreateListInput) {
       },
     },
   });
+
+  // Broadcast to board room
+  broadcastToBoard(list.board.id, SOCKET_EVENTS.LIST_CREATED, list);
 
   return list;
 }
@@ -110,12 +117,32 @@ export async function updateList(id: string, input: UpdateListInput) {
     },
   });
 
+  // Broadcast to board room
+  broadcastToBoard(list.board.id, SOCKET_EVENTS.LIST_UPDATED, list);
+
   return list;
 }
 
 export async function deleteList(id: string) {
+  // Get list info before deletion for broadcasting
+  const list = await prisma.list.findUnique({
+    where: { id },
+    include: {
+      board: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
   await prisma.list.delete({
     where: { id },
   });
+
+  if (list) {
+    // Broadcast list deleted event
+    broadcastToBoard(list.board.id, SOCKET_EVENTS.LIST_DELETED, { id });
+  }
 }
 

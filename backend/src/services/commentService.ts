@@ -1,4 +1,8 @@
 import { prisma } from '../lib/prisma';
+import {
+  broadcastToBoard,
+  SOCKET_EVENTS,
+} from '../lib/socketEvents';
 
 export interface CreateCommentInput {
   body: string;
@@ -20,6 +24,13 @@ export async function createComment(input: CreateCommentInput) {
               },
             },
           },
+        },
+      },
+    },
+    include: {
+      list: {
+        select: {
+          boardId: true,
         },
       },
     },
@@ -63,6 +74,9 @@ export async function createComment(input: CreateCommentInput) {
       userId: input.authorId,
     },
   });
+
+  // Broadcast to board room
+  broadcastToBoard(card.list.boardId, SOCKET_EVENTS.COMMENT_ADDED, comment);
 
   return comment;
 }
@@ -116,6 +130,17 @@ export async function getCardComments(cardId: string, userId: string) {
 export async function deleteComment(id: string, userId: string) {
   const comment = await prisma.comment.findUnique({
     where: { id },
+    include: {
+      card: {
+        include: {
+          list: {
+            select: {
+              boardId: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!comment) {
@@ -129,8 +154,13 @@ export async function deleteComment(id: string, userId: string) {
     });
   }
 
+  const boardId = comment.card.list.boardId;
+
   await prisma.comment.delete({
     where: { id },
   });
+
+  // Broadcast to board room
+  broadcastToBoard(boardId, SOCKET_EVENTS.COMMENT_DELETED, { id });
 }
 

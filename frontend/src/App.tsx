@@ -1,25 +1,12 @@
-import { useEffect } from 'react';
-import { io, Socket } from 'socket.io-client';
-
-let socket: Socket | null = null;
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
+// Socket.IO is set up and ready to use when auth is implemented
+// Import useSocket from './hooks/useSocket' when ready
+// Example usage:
+// const { joinBoard, on, SOCKET_EVENTS } = useSocket({
+//   token: accessToken,
+//   onConnect: () => console.log('Connected to real-time server'),
+// });
 
 function App() {
-  useEffect(() => {
-    socket = io(BACKEND_URL, {
-      transports: ['websocket'],
-    });
-
-    socket.on('connect', () => {
-      // Example: join a workspace room
-      socket?.emit('join-room', 'workspace:demo');
-    });
-
-    return () => {
-      socket?.disconnect();
-    };
-  }, []);
 
   return (
     <div className="app">

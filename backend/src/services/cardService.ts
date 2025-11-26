@@ -1,4 +1,8 @@
 import { prisma } from '../lib/prisma';
+import {
+  broadcastToBoard,
+  SOCKET_EVENTS,
+} from '../lib/socketEvents';
 
 export interface CreateCardInput {
   title: string;
@@ -60,6 +64,9 @@ export async function createCard(input: CreateCardInput) {
       cardId: card.id,
     },
   });
+
+  // Broadcast to board room
+  broadcastToBoard(card.list.board.id, SOCKET_EVENTS.CARD_CREATED, card);
 
   return card;
 }
@@ -211,14 +218,40 @@ export async function updateCard(id: string, input: UpdateCardInput) {
         cardId: card.id,
       },
     });
+    // Broadcast card moved event
+    broadcastToBoard(card.list.board.id, SOCKET_EVENTS.CARD_MOVED, card);
+  } else {
+    // Broadcast card updated event
+    broadcastToBoard(card.list.board.id, SOCKET_EVENTS.CARD_UPDATED, card);
   }
 
   return card;
 }
 
 export async function deleteCard(id: string) {
+  // Get card info before deletion for broadcasting
+  const card = await prisma.card.findUnique({
+    where: { id },
+    include: {
+      list: {
+        include: {
+          board: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
   await prisma.card.delete({
     where: { id },
   });
+
+  if (card) {
+    // Broadcast card deleted event
+    broadcastToBoard(card.list.board.id, SOCKET_EVENTS.CARD_DELETED, { id });
+  }
 }
 

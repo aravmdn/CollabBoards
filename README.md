@@ -112,6 +112,31 @@ All routes are prefixed with `/api`:
 - `GET /api/cards/:cardId/comments` – Get all comments for a card.
 - `DELETE /api/comments/:id` – Delete a comment (only by author).
 
+### Real-Time Updates (Socket.IO)
+
+The backend broadcasts real-time events for board operations. Connect to the Socket.IO server and join rooms to receive updates:
+
+**Connection:**
+```javascript
+import { getSocket } from './lib/socket';
+
+const socket = getSocket(accessToken); // JWT token required
+```
+
+**Room Management:**
+- `socket.emit('join-workspace', workspaceId)` – Join workspace room for workspace-level updates
+- `socket.emit('join-board', boardId)` – Join board room for board/list/card updates
+- `socket.emit('leave-workspace', workspaceId)` – Leave workspace room
+- `socket.emit('leave-board', boardId)` – Leave board room
+
+**Events Broadcasted:**
+- `board:created`, `board:updated`, `board:deleted`
+- `list:created`, `list:updated`, `list:deleted`
+- `card:created`, `card:updated`, `card:moved`, `card:deleted`
+- `comment:added`, `comment:deleted`
+
+All socket connections require JWT authentication. Users can only join rooms for workspaces/boards they have access to.
+
 ### Database & Prisma
 
 To set up the local PostgreSQL database and Prisma schema:

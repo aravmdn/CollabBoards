@@ -49,12 +49,12 @@
 - [x] Add 404 handler for unknown routes.
 
 ### 6. Real-Time (Socket.IO)
-- [ ] Define room naming conventions (`workspace:{id}`, `board:{id}`) clearly.
-- [ ] Authenticate socket connections (JWT on connection or via auth event).
-- [ ] On card move / title change / new comment:
-  - [ ] Broadcast events to relevant `board:{id}` room.
-  - [ ] Optionally broadcast high-level updates to `workspace:{id}` room.
-- [ ] Ensure real-time events respect RBAC and workspace membership.
+- [x] Define room naming conventions (`workspace:{id}`, `board:{id}`) clearly.
+- [x] Authenticate socket connections (JWT on connection or via auth event).
+- [x] On card move / title change / new comment:
+  - [x] Broadcast events to relevant `board:{id}` room.
+  - [x] Optionally broadcast high-level updates to `workspace:{id}` room.
+- [x] Ensure real-time events respect RBAC and workspace membership.
 
 ### 7. Frontend – UX & State Management
 - [ ] Configure API client with base URL + auth headers.
@@ -74,6 +74,6 @@
 ### 9. Deployment
 - [x] Deploy backend to a host that supports WebSockets (e.g. Railway/Render/Fly).
 - [x] Configure environment variables in the backend host (DB, JWT secrets, CORS).
-- [ ] Deploy frontend to Vercel with project root `frontend/`.
+- [x] Deploy frontend to Vercel with project root `frontend/`.
 - [ ] Set `VITE_BACKEND_URL` on Vercel to point to the backend.
 - [ ] Verify real-time updates and auth in production.
