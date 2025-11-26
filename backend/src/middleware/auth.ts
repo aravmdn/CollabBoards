@@ -7,16 +7,12 @@ export interface AuthPayload {
   roles?: string[];
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: AuthPayload;
-    }
-  }
+interface AuthenticatedRequest extends Request {
+  user?: AuthPayload;
 }
 
 export const isAuthenticated = (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
 ) => {
@@ -43,7 +39,7 @@ export const isAuthenticated = (
 
 export const hasRole =
   (...roles: string[]) =>
-  (req: Request, res: Response, next: NextFunction) => {
+  (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user || !req.user.roles) {
       return res.status(403).json({ message: 'Forbidden' });
     }
