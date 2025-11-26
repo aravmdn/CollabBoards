@@ -5,7 +5,7 @@ A Trello + Notion style real-time collaboration tool. Teams create **workspaces 
 ### Tech Stack
 
 - **Backend**: Node.js, Express, TypeScript  
-- **Database**: PostgreSQL (with Prisma or Knex, TBD)  
+- **Database**: PostgreSQL + Prisma ORM  
 - **Auth**: JWT access + refresh tokens (email/password)  
 - **Real-time**: Socket.IO with rooms for `workspace:{id}` and `board:{id}`  
 - **Frontend**: React, TypeScript, Vite  

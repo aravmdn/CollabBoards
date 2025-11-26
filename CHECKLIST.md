@@ -1,14 +1,14 @@
 ## CollabBoards – Implementation Checklist
 
 ### 1. Project Infrastructure
-- [ ] Confirm Node 20+ and npm workspaces installation works (`npm install` at repo root).
-- [ ] Add shared ESLint + Prettier configs for backend and frontend.
-- [ ] Add `.env.example` files for root, backend, and frontend (document required env vars).
+- [x] Confirm Node 20+ and npm workspaces installation works (`npm install` at repo root).
+- [x] Add shared ESLint + Prettier configs for backend and frontend.
+- [x] Add `.env.example` files for root, backend, and frontend (document required env vars).
 
 ### 2. Data & Multi-Tenancy (PostgreSQL + Prisma/Knex)
-- [ ] Choose ORM/Query builder (Prisma or Knex) and install it in `backend`.
+- [x] Choose ORM/Query builder (Prisma or Knex) and install it in `backend` (Prisma).
 - [ ] Configure PostgreSQL connection (connection pool, env vars).
-- [ ] Model users, workspaces, workspace memberships (with role), boards, lists, cards, comments, attachments, activity logs.
+- [x] Model users, workspaces, workspace memberships (with role), boards, lists, cards, comments, attachments, activity logs (Prisma schema).
 - [ ] Implement migrations and a seed script with sample data.
 - [ ] Ensure all entities are scoped by workspace (no cross-tenant data leakage).
 
