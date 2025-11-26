@@ -1,0 +1,186 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+  background: #050816;
+  color: #e5e7eb;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  padding: 1rem 2rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.app-subtitle {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.app-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 280px;
+  gap: 1px;
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.sidebar,
+.board-section,
+.details-panel {
+  padding: 1rem;
+  background: linear-gradient(145deg, #020617, #020617);
+}
+
+.sidebar h2,
+.details-panel h2 {
+  margin-top: 0;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+}
+
+.workspace-tile {
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.6rem;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(55, 65, 81, 0.8);
+  margin-bottom: 0.6rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.18s ease-out;
+}
+
+.workspace-tile--active {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.5),
+    0 18px 40px rgba(15, 23, 42, 0.9);
+}
+
+.primary-button,
+.secondary-button,
+.ghost-button {
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: none;
+  color: inherit;
+  transition: all 0.18s ease-out;
+}
+
+.primary-button {
+  margin-top: 0.5rem;
+  background: linear-gradient(135deg, #6366f1, #22c55e);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.9);
+}
+
+.primary-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 1);
+}
+
+.secondary-button {
+  border-color: rgba(75, 85, 99, 1);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.secondary-button:hover {
+  border-color: #6366f1;
+}
+
+.ghost-button {
+  border-style: dashed;
+  border-color: rgba(75, 85, 99, 0.9);
+  color: #9ca3af;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.board-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.board-lists {
+  display: flex;
+  gap: 0.8rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.board-list {
+  min-width: 220px;
+  max-width: 260px;
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), #020617);
+  border-radius: 0.9rem;
+  padding: 0.7rem;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+}
+
+.board-list h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+}
+
+.card {
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 0.7rem;
+  border: 1px solid rgba(55, 65, 81, 0.85);
+  padding: 0.6rem 0.7rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+  cursor: grab;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.9);
+}
+
+.details-panel p {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+@media (max-width: 960px) {
+  .app-main {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+
+  .details-panel {
+    display: none;
+  }
+}
+
+
