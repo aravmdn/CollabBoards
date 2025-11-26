@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import authRouter from './auth';
+import workspacesRouter from './workspaces';
 
 const router = Router();
 
@@ -8,7 +9,8 @@ router.get('/health', (_req, res) => {
 });
 
 router.use('/auth', authRouter);
+router.use('/workspaces', workspacesRouter);
 
-// TODO: add /workspaces, /boards, /lists, /cards, /comments routes
+// TODO: add /boards, /lists, /cards, /comments routes
 
 export default router;

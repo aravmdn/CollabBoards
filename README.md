@@ -50,23 +50,43 @@ VITE_BACKEND_URL="http://localhost:4000"
 - Env vars:
   - `VITE_BACKEND_URL` – URL of the deployed backend (with HTTPS).
 
-#### Backend (Node host with WebSockets)
+#### Backend (Railway)
 
-- Deploy the `backend/` app to a service that supports long-lived Node processes and WebSockets.  
-- Required env vars (draft):
-  - `PORT` – HTTP port.
-  - `DATABASE_URL` – PostgreSQL connection string.
-  - `JWT_ACCESS_TOKEN_SECRET`
-  - `JWT_REFRESH_TOKEN_SECRET`
+1. **Create a new Railway project** and connect your GitHub repository.
+2. **Add a PostgreSQL service** in Railway (or use an external database).
+3. **Add a new service** for the backend:
+   - **Root Directory**: `backend`
+   - **Build Command**: `npm run build` (runs Prisma generate + TypeScript compile)
+   - **Start Command**: `npm start`
+4. **Set environment variables**:
+   - `DATABASE_URL` – From your PostgreSQL service (Railway provides this automatically if using Railway Postgres).
+   - `JWT_ACCESS_TOKEN_SECRET` – Generate a secure random string.
+   - `JWT_REFRESH_TOKEN_SECRET` – Generate a different secure random string.
+   - `PORT` – Railway sets this automatically (defaults to 4000 if not set).
+5. **Run migrations**: After first deploy, connect to your Railway service and run:
+   ```bash
+   npx prisma migrate deploy
+   ```
+   Or use Railway's CLI/console to run migrations.
 
-### Auth Endpoints (Backend)
+**Note**: The backend validates required environment variables on startup and will exit with a clear error if any are missing.
+
+### API Endpoints (Backend)
 
 All routes are prefixed with `/api`:
 
+#### Auth
 - `POST /api/auth/register` – Register a new user (email, password, optional name), returns access + refresh tokens.
 - `POST /api/auth/login` – Login with email/password, returns access + refresh tokens.
 - `POST /api/auth/refresh` – Exchange a refresh token for a new access + refresh pair.
 - `POST /api/auth/logout` – Stateless logout (client should discard tokens).
+
+#### Workspaces (requires authentication)
+- `GET /api/workspaces` – List workspaces for current user (paginated, query params: `page`, `limit`).
+- `POST /api/workspaces` – Create a new workspace (body: `{ name: string }`). User becomes OWNER.
+- `GET /api/workspaces/:id` – Get workspace details (must be a member).
+- `PATCH /api/workspaces/:id` – Update workspace (OWNER or ADMIN only, body: `{ name?: string }`).
+- `DELETE /api/workspaces/:id` – Delete workspace (OWNER only).
 
 ### Database & Prisma
 

@@ -5,6 +5,22 @@ import app from './app';
 
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = [
+  'DATABASE_URL',
+  'JWT_ACCESS_TOKEN_SECRET',
+  'JWT_REFRESH_TOKEN_SECRET',
+];
+
+const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+
+if (missingEnvVars.length > 0) {
+  console.error(
+    `Missing required environment variables: ${missingEnvVars.join(', ')}`,
+  );
+  process.exit(1);
+}
+
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   cors: {
@@ -23,10 +39,24 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 4000;
+const PORT = Number.parseInt(process.env.PORT || '4000', 10);
 
-server.listen(PORT, () => {
+if (Number.isNaN(PORT)) {
+  console.error('Invalid PORT environment variable');
+  process.exit(1);
+}
+
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Backend listening on port ${PORT}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
 
 

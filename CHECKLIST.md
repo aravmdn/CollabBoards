@@ -17,15 +17,15 @@
 - [x] Hash passwords with bcrypt, store in DB.
 - [x] Generate access + refresh tokens (JWT) with secure secrets and expiry.
 - [x] Implement `/auth/refresh` and `/auth/logout` endpoints.
-- [ ] Implement `isAuthenticated` + `isWorkspaceMember` middleware.
-- [ ] Implement role-aware middleware `hasRole('OWNER'|'ADMIN'|'MEMBER')`.
-- [ ] Protect workspace/board/card routes with appropriate auth + role checks.
+- [x] Implement `isAuthenticated` + `isWorkspaceMember` middleware.
+- [x] Implement role-aware middleware `hasRole('OWNER'|'ADMIN'|'MEMBER')`.
+- [x] Protect workspace/board/card routes with appropriate auth + role checks.
 
 ### 4. REST API Design
-- [ ] Implement workspace endpoints:
-  - [ ] `GET /api/workspaces` (paginated list for current user).
-  - [ ] `POST /api/workspaces` (create).
-  - [ ] `GET /api/workspaces/:id` (details).
+- [x] Implement workspace endpoints:
+  - [x] `GET /api/workspaces` (paginated list for current user).
+  - [x] `POST /api/workspaces` (create).
+  - [x] `GET /api/workspaces/:id` (details).
 - [ ] Implement board endpoints:
   - [ ] `GET /api/workspaces/:id/boards` (paginated).
   - [ ] `POST /api/workspaces/:id/boards`.
@@ -43,9 +43,9 @@
 - [ ] Add pagination & filtering (query params) to list and card endpoints.
 
 ### 5. Validation & Error Handling
-- [ ] Define Zod schemas for all request bodies and parameters.
-- [ ] Add validation middleware to each route.
-- [ ] Normalize error responses (shape, error codes) via central `errorHandler`.
+- [x] Define Zod schemas for all request bodies and parameters.
+- [x] Add validation middleware to each route.
+- [x] Normalize error responses (shape, error codes) via central `errorHandler`.
 - [ ] Add 404 handler for unknown routes.
 
 ### 6. Real-Time (Socket.IO)
@@ -72,8 +72,8 @@
 - [ ] Ensure GitHub Actions CI runs tests and lints for both workspaces.
 
 ### 9. Deployment
-- [ ] Deploy backend to a host that supports WebSockets (e.g. Railway/Render/Fly).
-- [ ] Configure environment variables in the backend host (DB, JWT secrets, CORS).
+- [x] Deploy backend to a host that supports WebSockets (e.g. Railway/Render/Fly).
+- [x] Configure environment variables in the backend host (DB, JWT secrets, CORS).
 - [ ] Deploy frontend to Vercel with project root `frontend/`.
 - [ ] Set `VITE_BACKEND_URL` on Vercel to point to the backend.
 - [ ] Verify real-time updates and auth in production.
