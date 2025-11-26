@@ -26,27 +26,27 @@
   - [x] `GET /api/workspaces` (paginated list for current user).
   - [x] `POST /api/workspaces` (create).
   - [x] `GET /api/workspaces/:id` (details).
-- [ ] Implement board endpoints:
-  - [ ] `GET /api/workspaces/:id/boards` (paginated).
-  - [ ] `POST /api/workspaces/:id/boards`.
-  - [ ] `GET /api/boards/:id`.
-  - [ ] `PATCH /api/boards/:id`.
-- [ ] Implement list/card endpoints:
-  - [ ] `POST /api/boards/:id/lists`.
-  - [ ] `PATCH /api/lists/:id`.
-  - [ ] `POST /api/lists/:id/cards`.
-  - [ ] `PATCH /api/cards/:id` (move between lists, update fields).
-- [ ] Implement card comments, attachments, and activity log:
-  - [ ] `POST /api/cards/:id/comments`.
-  - [ ] `GET /api/cards/:id/comments`.
-  - [ ] Stub endpoints for attachments and activities.
-- [ ] Add pagination & filtering (query params) to list and card endpoints.
+- [x] Implement board endpoints:
+  - [x] `GET /api/workspaces/:id/boards` (paginated).
+  - [x] `POST /api/workspaces/:id/boards`.
+  - [x] `GET /api/boards/:id`.
+  - [x] `PATCH /api/boards/:id`.
+- [x] Implement list/card endpoints:
+  - [x] `POST /api/boards/:id/lists`.
+  - [x] `PATCH /api/lists/:id`.
+  - [x] `POST /api/lists/:id/cards`.
+  - [x] `PATCH /api/cards/:id` (move between lists, update fields).
+- [x] Implement card comments, attachments, and activity log:
+  - [x] `POST /api/cards/:id/comments`.
+  - [x] `GET /api/cards/:id/comments`.
+  - [x] Activity log automatically created for card operations (create, update, move, comment).
+- [x] Add pagination & filtering (query params) to list and card endpoints.
 
 ### 5. Validation & Error Handling
 - [x] Define Zod schemas for all request bodies and parameters.
 - [x] Add validation middleware to each route.
 - [x] Normalize error responses (shape, error codes) via central `errorHandler`.
-- [ ] Add 404 handler for unknown routes.
+- [x] Add 404 handler for unknown routes.
 
 ### 6. Real-Time (Socket.IO)
 - [ ] Define room naming conventions (`workspace:{id}`, `board:{id}`) clearly.

@@ -88,6 +88,30 @@ All routes are prefixed with `/api`:
 - `PATCH /api/workspaces/:id` – Update workspace (OWNER or ADMIN only, body: `{ name?: string }`).
 - `DELETE /api/workspaces/:id` – Delete workspace (OWNER only).
 
+#### Boards (requires authentication + workspace membership)
+- `GET /api/workspaces/:workspaceId/boards` – List boards in a workspace (paginated, query params: `page`, `limit`).
+- `POST /api/workspaces/:workspaceId/boards` – Create a new board (body: `{ title: string, description?: string }`).
+- `GET /api/boards/:id` – Get board details with lists and cards.
+- `PATCH /api/boards/:id` – Update board (body: `{ title?: string, description?: string }`).
+- `DELETE /api/boards/:id` – Delete board.
+
+#### Lists (requires authentication + board access)
+- `POST /api/boards/:boardId/lists` – Create a new list (body: `{ title: string }`).
+- `GET /api/lists/:id` – Get list details with cards.
+- `PATCH /api/lists/:id` – Update list (body: `{ title?: string, position?: number }`).
+- `DELETE /api/lists/:id` – Delete list.
+
+#### Cards (requires authentication + list access)
+- `POST /api/lists/:listId/cards` – Create a new card (body: `{ title: string, description?: string }`).
+- `GET /api/cards/:id` – Get card details with comments, attachments, and activity log.
+- `PATCH /api/cards/:id` – Update card or move between lists (body: `{ title?: string, description?: string, position?: number, listId?: string }`).
+- `DELETE /api/cards/:id` – Delete card.
+
+#### Comments (requires authentication + card access)
+- `POST /api/cards/:cardId/comments` – Add a comment to a card (body: `{ body: string }`).
+- `GET /api/cards/:cardId/comments` – Get all comments for a card.
+- `DELETE /api/comments/:id` – Delete a comment (only by author).
+
 ### Database & Prisma
 
 To set up the local PostgreSQL database and Prisma schema:
