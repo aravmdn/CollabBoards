@@ -59,6 +59,21 @@ VITE_BACKEND_URL="http://localhost:4000"
   - `JWT_ACCESS_TOKEN_SECRET`
   - `JWT_REFRESH_TOKEN_SECRET`
 
+### Database & Prisma
+
+To set up the local PostgreSQL database and Prisma schema:
+
+```bash
+# From the backend directory
+cd backend
+
+# Apply migrations (requires a running PostgreSQL instance and DATABASE_URL)
+npx prisma migrate dev --name init
+
+# Seed demo data (user, workspace, board, lists, cards, comments)
+npm run prisma:seed
+```
+
 ### Roadmap
 
 See `REQUIREMENTS.md` and `CHECKLIST.md` (or your project board) for the implementation roadmap:

@@ -7,9 +7,9 @@
 
 ### 2. Data & Multi-Tenancy (PostgreSQL + Prisma/Knex)
 - [x] Choose ORM/Query builder (Prisma or Knex) and install it in `backend` (Prisma).
-- [ ] Configure PostgreSQL connection (connection pool, env vars).
+- [x] Configure PostgreSQL connection (connection pool, env vars) via Prisma `DATABASE_URL`.
 - [x] Model users, workspaces, workspace memberships (with role), boards, lists, cards, comments, attachments, activity logs (Prisma schema).
-- [ ] Implement migrations and a seed script with sample data.
+- [x] Implement a seed script with sample data (`npm run prisma:seed`).
 - [ ] Ensure all entities are scoped by workspace (no cross-tenant data leakage).
 
 ### 3. Auth & RBAC
