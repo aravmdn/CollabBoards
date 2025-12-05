@@ -57,7 +57,7 @@
 - [x] Ensure real-time events respect RBAC and workspace membership.
 
 ### 7. Frontend – UX & State Management
-- [ ] Configure API client with base URL + auth headers.
+- [x] Configure API client with base URL + auth headers.
 - [ ] Implement login/register pages and auth state.
 - [ ] Implement workspace selection and board list view.
 - [ ] Implement board view with columns/lists and draggable cards (Trello-style).
@@ -75,5 +75,5 @@
 - [x] Deploy backend to a host that supports WebSockets (e.g. Railway/Render/Fly).
 - [x] Configure environment variables in the backend host (DB, JWT secrets, CORS).
 - [x] Deploy frontend to Vercel with project root `frontend/`.
-- [ ] Set `VITE_BACKEND_URL` on Vercel to point to the backend.
+- [x] Set `VITE_BACKEND_URL` on Vercel to point to the backend.
 - [ ] Verify real-time updates and auth in production.

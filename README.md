@@ -48,7 +48,7 @@ VITE_BACKEND_URL="http://localhost:4000"
 - Build command: `npm install && npm run build`  
 - Output directory: `dist`  
 - Env vars:
-  - `VITE_BACKEND_URL` – URL of the deployed backend (with HTTPS).
+  - `VITE_BACKEND_URL` – URL of the deployed backend (with HTTPS). **Required** for API calls and Socket.IO.
 
 #### Backend (Railway)
 
@@ -136,6 +136,12 @@ const socket = getSocket(accessToken); // JWT token required
 - `comment:added`, `comment:deleted`
 
 All socket connections require JWT authentication. Users can only join rooms for workspaces/boards they have access to.
+
+### Frontend API Client & Auth
+
+- API client is configured in `frontend/src/lib/api.ts` and reads `VITE_BACKEND_URL` for the backend base URL.
+- `useAuth` hook (`frontend/src/hooks/useAuth.ts`) provides `login`, `register`, `logout`, `refresh`, and exposes `tokens`/`isAuthenticated`.
+- Tokens are persisted in `localStorage` and automatically attached to requests via the Axios interceptor.
 
 ### Database & Prisma
 
