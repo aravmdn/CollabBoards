@@ -48,21 +48,22 @@ VITE_BACKEND_URL="http://localhost:4000"
 - Build command: `npm install && npm run build`  
 - Output directory: `dist`  
 - Env vars:
-  - `VITE_BACKEND_URL` – URL of the deployed backend (with HTTPS). **Required** for API calls and Socket.IO.
+  - `VITE_BACKEND_URL` – URL of the deployed backend (with HTTPS). **Required** for API calls and Socket.IO. (Example: `https://collabboards-backend-production.up.railway.app`)
 
 #### Backend (Railway)
 
 1. **Create a new Railway project** and connect your GitHub repository.
 2. **Add a PostgreSQL service** in Railway (or use an external database).
 3. **Add a new service** for the backend:
-   - **Root Directory**: `backend`
-   - **Build Command**: `npm run build` (runs Prisma generate + TypeScript compile)
-   - **Start Command**: `npm start`
+   - **Root Directory**: repository root
+   - **Build Command**: `npm install && npm run build --workspace backend`
+   - **Start Command**: `npm run start --workspace backend`
 4. **Set environment variables**:
    - `DATABASE_URL` – From your PostgreSQL service (Railway provides this automatically if using Railway Postgres).
    - `JWT_ACCESS_TOKEN_SECRET` – Generate a secure random string.
    - `JWT_REFRESH_TOKEN_SECRET` – Generate a different secure random string.
    - `PORT` – Railway sets this automatically (defaults to 4000 if not set).
+   - `FRONTEND_URL` – Your deployed frontend origin (e.g., `https://collabboards-frontend.vercel.app`) for CORS/Socket.IO.
 5. **Run migrations**: After first deploy, connect to your Railway service and run:
    ```bash
    npx prisma migrate deploy
