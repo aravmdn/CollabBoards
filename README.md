@@ -1,176 +1,200 @@
 ## CollabBoards
 
-A Trello + Notion style real-time collaboration tool. Teams create **workspaces → boards → lists → cards**, and each card can have a mini rich-text doc and comments. All updates are pushed in real time to everyone on the board.
+CollabBoards is a recovery-stage collaboration app. Current shipped flow covers:
 
-### Tech Stack
+- email/password auth with JWT access + refresh tokens
+- workspace list and board list
+- board view with real lists and cards
+- card comments and activity feed
+- board refresh through Socket.IO events
 
-- **Backend**: Node.js, Express, TypeScript  
-- **Database**: PostgreSQL + Prisma ORM  
-- **Auth**: JWT access + refresh tokens (email/password)  
-- **Real-time**: Socket.IO with rooms for `workspace:{id}` and `board:{id}`  
-- **Frontend**: React, TypeScript, Vite  
-- **CI**: GitHub Actions (tests and lint on push/PR)
+Current non-goals for this recovery pass:
 
-### Project Structure
+- rich-text card editor UI
+- attachment upload UI
+- member management UI
+- drag-and-drop card movement
+- production deployment verification
 
-- `backend/` – Express API, auth, RBAC, Socket.IO, database layer  
-- `frontend/` – React + Vite SPA for boards and card docs  
-- `.github/workflows/ci.yml` – CI pipeline (Node setup, tests)
+### Stack
 
-### Getting Started (Local)
+- Backend: Node.js, Express, TypeScript, Prisma, PostgreSQL, Socket.IO
+- Frontend: React, TypeScript, Vite, Axios, Socket.IO client
+- CI: install, lint, tests, backend build, frontend build
+
+### Repo Layout
+
+- `backend/`: API, Prisma schema, seed, route tests, service tests
+- `frontend/`: SPA for auth, workspace, board, card comments
+- `.github/workflows/ci.yml`: repository CI gates
+- `CHECKLIST.md`: implementation ledger
+- `REQUIREMENTS.md`: product requirements plus deferred items
+
+### Local Setup
+
+1. Install packages:
 
 ```bash
-# Install dependencies (root, using npm workspaces)
 npm install
+```
 
-# Backend (Node/Express + Socket.IO)
+2. Copy env examples:
+
+```bash
+copy backend.env.example backend\.env
+copy frontend.env.example frontend\.env
+```
+
+3. Provide PostgreSQL in `backend/.env` via `DATABASE_URL`.
+
+Optional Docker path if Docker exists on your machine:
+
+```bash
+docker run --name collabboards-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=collabboards -p 5432:5432 -d postgres:16
+```
+
+Then use:
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/collabboards
+```
+
+4. Apply committed migrations and seed demo data:
+
+```bash
+npx prisma migrate deploy --schema backend/prisma/schema.prisma
+npm run prisma:seed --workspace backend
+```
+
+Seed login after this step:
+
+- email: `demo@collabboards.local`
+- password: `demo12345`
+
+5. Run backend and frontend:
+
+```bash
 npm run dev:backend
-
-# Frontend (React + Vite)
 npm run dev:frontend
 ```
 
-By default:
-- Backend listens on `http://localhost:4000`
-- Frontend listens on `http://localhost:5173`
+Defaults:
 
-You can override the backend URL in the frontend via:
+- backend: `http://localhost:4000`
+- frontend: `http://localhost:5173`
+- frontend backend origin override: `VITE_BACKEND_URL=http://localhost:4000`
 
-```bash
-VITE_BACKEND_URL="http://localhost:4000"
-```
+### API Contract
 
-### Deployment
+All routes live under `/api`.
 
-#### Frontend (Vercel)
+Auth:
 
-- Project root: `frontend/`  
-- Build command: `npm install && npm run build`  
-- Output directory: `dist`  
-- Env vars:
-  - `VITE_BACKEND_URL` – URL of the deployed backend (with HTTPS). **Required** for API calls and Socket.IO. (Example: `https://collabboards-backend-production.up.railway.app`)
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
 
-#### Backend (Railway)
+Workspaces:
 
-1. **Create a new Railway project** and connect your GitHub repository.
-2. **Add a PostgreSQL service** in Railway (or use an external database).
-3. **Add a new service** for the backend:
-   - **Root Directory**: repository root
-   - **Build Command**: `npm install && npm run build --workspace backend`
-   - **Start Command**: `npm run start --workspace backend`
-4. **Set environment variables**:
-   - `DATABASE_URL` – From your PostgreSQL service (Railway provides this automatically if using Railway Postgres).
-   - `JWT_ACCESS_TOKEN_SECRET` – Generate a secure random string.
-   - `JWT_REFRESH_TOKEN_SECRET` – Generate a different secure random string.
-   - `PORT` – Railway sets this automatically (defaults to 4000 if not set).
-   - `FRONTEND_URL` – Your deployed frontend origin (e.g., `https://collabboards-frontend.vercel.app`) for CORS/Socket.IO.
-5. **Run migrations**: After first deploy, connect to your Railway service and run:
-   ```bash
-   npx prisma migrate deploy
-   ```
-   Or use Railway's CLI/console to run migrations.
+- `GET /api/workspaces`
+- `POST /api/workspaces`
+- `GET /api/workspaces/:workspaceId`
+- `PATCH /api/workspaces/:workspaceId`
+- `DELETE /api/workspaces/:workspaceId`
 
-**Note**: The backend validates required environment variables on startup and will exit with a clear error if any are missing.
+Boards:
 
-### API Endpoints (Backend)
+- `GET /api/workspaces/:workspaceId/boards`
+- `POST /api/workspaces/:workspaceId/boards`
+- `GET /api/boards/:id`
+- `PATCH /api/boards/:id`
+- `DELETE /api/boards/:id`
 
-All routes are prefixed with `/api`:
+Lists:
 
-#### Auth
-- `POST /api/auth/register` – Register a new user (email, password, optional name), returns access + refresh tokens.
-- `POST /api/auth/login` – Login with email/password, returns access + refresh tokens.
-- `POST /api/auth/refresh` – Exchange a refresh token for a new access + refresh pair.
-- `POST /api/auth/logout` – Stateless logout (client should discard tokens).
+- `POST /api/boards/:boardId/lists`
+- `GET /api/lists/:id`
+- `PATCH /api/lists/:id`
+- `DELETE /api/lists/:id`
 
-#### Workspaces (requires authentication)
-- `GET /api/workspaces` – List workspaces for current user (paginated, query params: `page`, `limit`).
-- `POST /api/workspaces` – Create a new workspace (body: `{ name: string }`). User becomes OWNER.
-- `GET /api/workspaces/:id` – Get workspace details (must be a member).
-- `PATCH /api/workspaces/:id` – Update workspace (OWNER or ADMIN only, body: `{ name?: string }`).
-- `DELETE /api/workspaces/:id` – Delete workspace (OWNER only).
+Cards:
 
-#### Boards (requires authentication + workspace membership)
-- `GET /api/workspaces/:workspaceId/boards` – List boards in a workspace (paginated, query params: `page`, `limit`).
-- `POST /api/workspaces/:workspaceId/boards` – Create a new board (body: `{ title: string, description?: string }`).
-- `GET /api/boards/:id` – Get board details with lists and cards.
-- `PATCH /api/boards/:id` – Update board (body: `{ title?: string, description?: string }`).
-- `DELETE /api/boards/:id` – Delete board.
+- `POST /api/lists/:listId/cards`
+- `GET /api/cards/:id`
+- `PATCH /api/cards/:id`
+- `DELETE /api/cards/:id`
 
-#### Lists (requires authentication + board access)
-- `POST /api/boards/:boardId/lists` – Create a new list (body: `{ title: string }`).
-- `GET /api/lists/:id` – Get list details with cards.
-- `PATCH /api/lists/:id` – Update list (body: `{ title?: string, position?: number }`).
-- `DELETE /api/lists/:id` – Delete list.
+Comments:
 
-#### Cards (requires authentication + list access)
-- `POST /api/lists/:listId/cards` – Create a new card (body: `{ title: string, description?: string }`).
-- `GET /api/cards/:id` – Get card details with comments, attachments, and activity log.
-- `PATCH /api/cards/:id` – Update card or move between lists (body: `{ title?: string, description?: string, position?: number, listId?: string }`).
-- `DELETE /api/cards/:id` – Delete card.
+- `POST /api/cards/:cardId/comments`
+- `GET /api/cards/:cardId/comments`
+- `DELETE /api/comments/:id`
 
-#### Comments (requires authentication + card access)
-- `POST /api/cards/:cardId/comments` – Add a comment to a card (body: `{ body: string }`).
-- `GET /api/cards/:cardId/comments` – Get all comments for a card.
-- `DELETE /api/comments/:id` – Delete a comment (only by author).
+Card metadata now supported in backend and frontend display:
 
-### Real-Time Updates (Socket.IO)
+- `assigneeId`
+- `labels`
+- `dueDate`
 
-The backend broadcasts real-time events for board operations. Connect to the Socket.IO server and join rooms to receive updates:
+### Real-Time Contract
 
-**Connection:**
-```javascript
-import { getSocket } from './lib/socket';
+Socket.IO rooms:
 
-const socket = getSocket(accessToken); // JWT token required
-```
+- `workspace:{id}`
+- `board:{id}`
 
-**Room Management:**
-- `socket.emit('join-workspace', workspaceId)` – Join workspace room for workspace-level updates
-- `socket.emit('join-board', boardId)` – Join board room for board/list/card updates
-- `socket.emit('leave-workspace', workspaceId)` – Leave workspace room
-- `socket.emit('leave-board', boardId)` – Leave board room
+Client events:
 
-**Events Broadcasted:**
-- `board:created`, `board:updated`, `board:deleted`
-- `list:created`, `list:updated`, `list:deleted`
-- `card:created`, `card:updated`, `card:moved`, `card:deleted`
-- `comment:added`, `comment:deleted`
+- `join-workspace`
+- `leave-workspace`
+- `join-board`
+- `leave-board`
 
-All socket connections require JWT authentication. Users can only join rooms for workspaces/boards they have access to.
+Server events:
 
-### Frontend API Client & Auth
+- `board:created`
+- `board:updated`
+- `board:deleted`
+- `list:created`
+- `list:updated`
+- `list:deleted`
+- `card:created`
+- `card:updated`
+- `card:moved`
+- `card:deleted`
+- `comment:added`
+- `comment:deleted`
 
-- API client is configured in `frontend/src/lib/api.ts` and reads `VITE_BACKEND_URL` for the backend base URL.
-- `useAuth` hook (`frontend/src/hooks/useAuth.ts`) provides `login`, `register`, `logout`, `refresh`, and exposes `tokens`/`isAuthenticated`.
-- Tokens are persisted in `localStorage` and automatically attached to requests via the Axios interceptor.
+Frontend currently reacts by refetching workspace board data and selected card data.
 
-### Database & Prisma
+### Verification
 
-To set up the local PostgreSQL database and Prisma schema:
+Repository:
 
 ```bash
-# From the backend directory
-cd backend
-
-# Apply migrations (requires a running PostgreSQL instance and DATABASE_URL)
-npx prisma migrate dev --name init
-
-# Seed demo data (user, workspace, board, lists, cards, comments)
-npm run prisma:seed
+npm install
+npm run lint
+npm test
+npm run build --workspace backend
+npm run build --workspace frontend
 ```
 
-### Roadmap
+Manual smoke with configured DB:
 
-See `REQUIREMENTS.md` and `CHECKLIST.md` (or your project board) for the implementation roadmap:
+- backend `GET /api/health`
+- auth register/login/refresh/logout
+- workspace create/list
+- board create/list/open
+- list create
+- card create/move
+- comment create/list
+- frontend login, workspace select, board open, comment post
 
-- Multi-tenant workspaces and RBAC
-- Boards, lists, cards, comments, attachments, activity log
-- Real-time board updates via Socket.IO
-- Comprehensive tests and CI
+### Known Gaps
 
-### Development Guidelines
-
-- Write TypeScript with `strict` mode enabled.  
-- Keep routes thin – push logic into services/use-cases.  
-- Validate all incoming requests (Zod) and use the central error handler.  
-- Prefer small, focused React components with clear props and hooks.
+- No DB-backed integration tests yet. Current tests cover route mounts, metadata contract, and selected service behavior.
+- No attachment upload route or UI recovery.
+- No rich-text editor recovery.
+- Card move UI is simple button-based step, not drag-and-drop.
+- Production smoke still pending.

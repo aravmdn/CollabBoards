@@ -1,4 +1,8 @@
 import { prisma } from '../lib/prisma';
+import {
+  broadcastToWorkspace,
+  SOCKET_EVENTS,
+} from '../lib/socketEvents';
 
 export interface CreateBoardInput {
   title: string;
@@ -33,6 +37,8 @@ export async function createBoard(input: CreateBoardInput) {
     },
   });
 
+  broadcastToWorkspace(board.workspaceId, SOCKET_EVENTS.BOARD_CREATED, board);
+
   return board;
 }
 
@@ -65,6 +71,13 @@ export async function getBoardById(id: string, userId: string) {
               position: 'asc',
             },
             include: {
+              assignee: {
+                select: {
+                  id: true,
+                  email: true,
+                  name: true,
+                },
+              },
               _count: {
                 select: {
                   comments: true,
@@ -164,12 +177,16 @@ export async function updateBoard(id: string, input: UpdateBoardInput) {
     },
   });
 
+  broadcastToWorkspace(board.workspaceId, SOCKET_EVENTS.BOARD_UPDATED, board);
+
   return board;
 }
 
 export async function deleteBoard(id: string) {
-  await prisma.board.delete({
+  const board = await prisma.board.delete({
     where: { id },
   });
+
+  broadcastToWorkspace(board.workspaceId, SOCKET_EVENTS.BOARD_DELETED, { id });
 }
 

@@ -18,6 +18,7 @@ model User {
   memberships WorkspaceMember[]
   comments    Comment[]
   activities  ActivityLog[]
+  assignedCards Card[] @relation("CardAssignee")
 }
 
 model Workspace {
@@ -81,11 +82,15 @@ model Card {
   title       String
   description String?
   position    Int
+  dueDate     DateTime?
+  labels      String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   listId      String
   list        List     @relation(fields: [listId], references: [id])
+  assigneeId  String?
+  assignee    User?    @relation("CardAssignee", fields: [assigneeId], references: [id])
 
   comments    Comment[]
   attachments Attachment[]

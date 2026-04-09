@@ -8,6 +8,9 @@ export interface CreateCardInput {
   title: string;
   description?: string;
   listId: string;
+  dueDate?: Date;
+  assigneeId?: string;
+  labels?: string[];
 }
 
 export interface UpdateCardInput {
@@ -15,6 +18,9 @@ export interface UpdateCardInput {
   description?: string;
   position?: number;
   listId?: string; // For moving cards between lists
+  dueDate?: Date | null;
+  assigneeId?: string | null;
+  labels?: string[];
 }
 
 export async function createCard(input: CreateCardInput) {
@@ -33,6 +39,9 @@ export async function createCard(input: CreateCardInput) {
       description: input.description,
       listId: input.listId,
       position: newPosition,
+      dueDate: input.dueDate,
+      assigneeId: input.assigneeId,
+      labels: input.labels ?? [],
     },
     include: {
       list: {
@@ -44,6 +53,13 @@ export async function createCard(input: CreateCardInput) {
               workspaceId: true,
             },
           },
+        },
+      },
+      assignee: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
         },
       },
       _count: {
@@ -111,6 +127,13 @@ export async function getCardById(id: string, userId: string) {
               name: true,
             },
           },
+        },
+      },
+      assignee: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
         },
       },
       attachments: {
@@ -187,6 +210,13 @@ export async function updateCard(id: string, input: UpdateCardInput) {
               workspaceId: true,
             },
           },
+        },
+      },
+      assignee: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
         },
       },
       _count: {

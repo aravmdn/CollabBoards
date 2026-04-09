@@ -14,9 +14,10 @@ router.get('/health', (_req, res) => {
 
 router.use('/auth', authRouter);
 router.use('/workspaces', workspacesRouter);
-router.use('/', boardsRouter); // Handles /api/boards and /api/workspaces/:id/boards
-router.use('/', listsRouter); // Handles /api/lists and /api/boards/:id/lists
-router.use('/', cardsRouter); // Handles /api/cards and /api/lists/:id/cards
-router.use('/', commentsRouter); // Handles /api/comments and /api/cards/:id/comments
+router.use('/workspaces', boardsRouter);
+router.use('/boards', boardsRouter);
+router.use('/lists', listsRouter);
+router.use('/cards', cardsRouter);
+router.use('/comments', commentsRouter);
 
 export default router;

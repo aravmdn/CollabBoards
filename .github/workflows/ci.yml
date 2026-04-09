@@ -21,12 +21,21 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
 
       - name: Backend tests
         run: npm test --workspace backend
 
       - name: Frontend tests
         run: npm test --workspace frontend
+
+      - name: Backend build
+        run: npm run build --workspace backend
+
+      - name: Frontend build
+        run: npm run build --workspace frontend
 
 

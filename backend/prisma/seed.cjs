@@ -1,17 +1,23 @@
 // Simple Prisma seed script for local development
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
 async function main() {
+  const demoPassword = await bcrypt.hash('demo12345', 10);
+
   // Demo user
   const user = await prisma.user.upsert({
     where: { email: 'demo@collabboards.local' },
-    update: {},
+    update: {
+      password: demoPassword,
+      name: 'Demo User',
+    },
     create: {
       email: 'demo@collabboards.local',
-      password: 'hashed-password-placeholder',
+      password: demoPassword,
       name: 'Demo User',
     },
   });
@@ -46,11 +52,15 @@ async function main() {
                   title: 'Set up backend skeleton',
                   description: 'Express app, Socket.IO, and middleware',
                   position: 1,
+                  labels: ['backend', 'api'],
+                  assigneeId: user.id,
                 },
                 {
                   title: 'Design workspace/board schema',
                   description: 'Model workspaces, boards, lists, and cards',
                   position: 2,
+                  dueDate: new Date('2026-04-15T10:00:00.000Z'),
+                  labels: ['database'],
                 },
               ],
             },
@@ -64,6 +74,7 @@ async function main() {
                   title: 'Implement auth & RBAC',
                   description: 'JWT + role-based permissions',
                   position: 1,
+                  labels: ['auth', 'security'],
                 },
               ],
             },
@@ -77,6 +88,7 @@ async function main() {
                   title: 'Create project skeleton',
                   description: 'Frontend + backend scaffolding',
                   position: 1,
+                  labels: ['setup'],
                 },
               ],
             },

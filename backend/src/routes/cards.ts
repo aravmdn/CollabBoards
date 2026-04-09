@@ -1,63 +1,23 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { isAuthenticated, AuthenticatedRequest } from '../middleware/auth';
-import {
-  createCard,
-  getCardById,
-  updateCard,
-  deleteCard,
-} from '../services/cardService';
+import { getCardById, updateCard, deleteCard } from '../services/cardService';
 
 const router = Router();
-
-// Validation schemas
-const createCardSchema = z.object({
-  title: z.string().min(1).max(200),
-  description: z.string().max(5000).optional(),
-});
 
 const updateCardSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(5000).optional(),
   position: z.number().int().min(0).optional(),
   listId: z.string().optional(),
+  dueDate: z.coerce.date().nullable().optional(),
+  assigneeId: z.string().nullable().optional(),
+  labels: z.array(z.string().min(1).max(50)).max(10).optional(),
 });
 
-// POST /api/lists/:listId/cards - Create a new card
-router.post(
-  '/lists/:listId/cards',
-  isAuthenticated,
-  async (req: AuthenticatedRequest, res, next) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
-      // Verify user has access to the list's board
-      await import('../services/listService').then((m) =>
-        m.getListById(req.params.listId, req.user!.userId),
-      );
-
-      const body = createCardSchema.parse(req.body);
-
-      const card = await createCard({
-        title: body.title,
-        description: body.description,
-        listId: req.params.listId,
-      });
-
-      res.status(201).json(card);
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({
-          message: 'Validation error',
-          errors: err.errors,
-        });
-      }
-      next(err);
-    }
-  },
-);
+const createCommentSchema = z.object({
+  body: z.string().min(1).max(2000),
+});
 
 // GET /api/cards/:id - Get card details
 router.get(
@@ -87,11 +47,9 @@ router.patch(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      // Verify user has access to the card's board
       await getCardById(req.params.id, req.user.userId);
       const body = updateCardSchema.parse(req.body);
 
-      // If moving to a different list, verify access to the new list's board
       if (body.listId) {
         await import('../services/listService').then((m) =>
           m.getListById(body.listId!, req.user!.userId),
@@ -122,7 +80,6 @@ router.delete(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      // Verify user has access to the card's board
       await getCardById(req.params.id, req.user.userId);
       await deleteCard(req.params.id);
       res.status(204).send();
@@ -132,5 +89,55 @@ router.delete(
   },
 );
 
-export default router;
+// POST /api/cards/:cardId/comments - Create a new comment
+router.post(
+  '/:cardId/comments',
+  isAuthenticated,
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
 
+      const body = createCommentSchema.parse(req.body);
+      const { createComment } = await import('../services/commentService');
+
+      const comment = await createComment({
+        body: body.body,
+        cardId: req.params.cardId,
+        authorId: req.user.userId,
+      });
+
+      res.status(201).json(comment);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: 'Validation error',
+          errors: err.errors,
+        });
+      }
+      next(err);
+    }
+  },
+);
+
+// GET /api/cards/:cardId/comments - Get all comments for a card
+router.get(
+  '/:cardId/comments',
+  isAuthenticated,
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const { getCardComments } = await import('../services/commentService');
+      const comments = await getCardComments(req.params.cardId, req.user.userId);
+      res.json(comments);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+export default router;

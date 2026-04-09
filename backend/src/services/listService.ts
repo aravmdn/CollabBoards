@@ -42,6 +42,15 @@ export async function createList(input: CreateListInput) {
         orderBy: {
           position: 'asc',
         },
+        include: {
+          assignee: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+            },
+          },
+        },
       },
     },
   });
@@ -79,6 +88,13 @@ export async function getListById(id: string, userId: string) {
           position: 'asc',
         },
         include: {
+          assignee: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+            },
+          },
           _count: {
             select: {
               comments: true,
@@ -112,6 +128,15 @@ export async function updateList(id: string, input: UpdateListInput) {
       cards: {
         orderBy: {
           position: 'asc',
+        },
+        include: {
+          assignee: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+            },
+          },
         },
       },
     },

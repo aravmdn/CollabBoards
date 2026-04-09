@@ -1,67 +1,86 @@
-## CollabBoards – Requirements
+## CollabBoards - Requirements
+
+### Current Recovery Scope
+
+Recovered and expected now:
+
+- auth with email/password
+- workspace list and create
+- board list, create, open
+- list create
+- card create, inspect, simple move
+- comments view and create
+- board refresh through Socket.IO events
+- card metadata fields in backend contract: assignee, labels, due date
+
+Explicitly deferred after this recovery pass:
+
+- rich-text card editor UI
+- attachment upload and management
+- workspace member management UI
+- drag-and-drop movement
+- production deployment validation
+- full DB-backed integration coverage
 
 ### 1. Functional Requirements
 
-1.1 Workspaces & Boards  
-- The system SHALL support multiple workspaces.  
-- Each workspace SHALL have one or more boards.  
-- Each board SHALL contain ordered lists; each list SHALL contain ordered cards.
+1.1 Workspaces and Boards
+- system SHALL support multiple workspaces
+- each workspace SHALL have one or more boards
+- each board SHALL contain ordered lists; each list SHALL contain ordered cards
 
-1.2 Cards & Content  
-- Each card SHALL have a title, description (rich-text), and metadata (assignee, labels, due date).  
-- Each card SHALL support comments with author, timestamp, and text.  
-- The system SHOULD support an activity log per card (creation, updates, moves, comments).  
-- The system SHOULD support file attachments per card (link or uploaded files).
+1.2 Cards and Content
+- each card SHALL have title, description, and metadata (`assigneeId`, `labels`, `dueDate`)
+- each card SHALL support comments with author, timestamp, and text
+- system SHOULD support activity log per card
+- system SHOULD support file attachments per card
+- recovery UI only SHALL display simple description text, not rich-text editor
 
-1.3 Users & Roles  
-- Users SHALL authenticate with email and password.  
-- Users SHALL belong to one or more workspaces.  
-- Users SHALL have a role within each workspace: OWNER, ADMIN, or MEMBER.  
-- Permissions SHALL be enforced per workspace based on role.
+1.3 Users and Roles
+- users SHALL authenticate with email and password
+- users SHALL belong to one or more workspaces
+- users SHALL have role within each workspace: OWNER, ADMIN, MEMBER
+- permissions SHALL be enforced per workspace
 
-1.4 Permissions (RBAC)  
-- OWNERs SHALL be able to manage workspace settings and members.  
-- ADMINs SHALL be able to manage boards and lists within a workspace.  
-- MEMBERs SHALL be able to create and edit cards, and comment, within permitted boards.  
-- The system SHALL prevent access to workspaces and boards a user is not a member of.
+1.4 Permissions
+- OWNERs SHALL manage workspace settings
+- ADMINs SHALL manage boards and lists
+- MEMBERs SHALL create and edit cards, and comment
+- system SHALL prevent access to workspaces and boards outside membership
 
-1.5 Real-Time Collaboration  
-- The system SHALL update all connected clients in real time when:
-  - A card is created, updated, or moved.
-  - A comment is added to a card.
-- The system SHALL group connections into rooms by workspace and board (e.g., `workspace:{id}`, `board:{id}`).
+1.5 Real-Time Collaboration
+- system SHALL update connected clients when card is created, updated, moved
+- system SHALL update connected clients when comment is added or deleted
+- system SHALL group connections into `workspace:{id}` and `board:{id}` rooms
+- recovery frontend MAY refetch board state instead of applying granular optimistic patches
 
-1.6 API  
-- The backend SHALL expose a REST API for workspaces, boards, lists, cards, and comments.  
-- The API SHALL support pagination for boards and cards.  
-- The API SHALL validate inputs and return standardized error responses.
+1.6 API
+- backend SHALL expose REST API for workspaces, boards, lists, cards, comments
+- API SHALL support pagination for workspaces and boards
+- API SHALL validate inputs and return standardized error responses
 
 ### 2. Non-Functional Requirements
 
-2.1 Security  
-- Passwords SHALL be hashed using a strong one-way hash (e.g., bcrypt).  
-- JWT secrets SHALL NOT be committed to version control and SHALL be provided via env vars.  
-- All workspace and board access SHALL be scoped by the authenticated user and workspace membership.  
+2.1 Security
+- passwords SHALL be hashed
+- JWT secrets SHALL live in env vars
+- workspace and board access SHALL be scoped by authenticated membership
 
-2.2 Performance & Scalability  
-- Typical board operations (create/move card, add comment) SHOULD complete within 300 ms under normal load.  
-- The system SHOULD handle multiple concurrent users on the same board without inconsistent state.
+2.2 Reliability
+- critical domain logic SHOULD stay covered by automated tests
+- route mount regressions SHALL have automated coverage
 
-2.3 Reliability  
-- The system SHOULD handle transient DB and network errors gracefully.  
-- Critical domain logic (auth, role checks, card movement) SHALL be covered by automated tests.
+2.3 Usability
+- UI SHOULD feel responsive and real-time for recovered core flow
+- drag-and-drop SHOULD be considered backlog, not shipped claim
 
-2.4 Usability  
-- The UI SHOULD feel responsive and real-time (no manual refresh needed for board updates).  
-- Drag-and-drop within a board SHOULD be intuitive and keyboard-accessible where possible.
-
-2.5 Deployability  
-- The frontend SHALL be deployable as a static site (e.g. Vercel) using `npm run build`.  
-- The backend SHALL be deployable as a Node/Express service with WebSocket support.  
+2.4 Deployability
+- frontend SHALL build with `npm run build --workspace frontend`
+- backend SHALL build with `npm run build --workspace backend`
+- CI SHOULD enforce lint, tests, and both builds
 
 ### 3. Technical Constraints
 
-- Backend MUST use Node.js + Express, PostgreSQL, and JWT for auth.  
-- Real-time communication MUST use Socket.IO or WebSockets.  
-- Frontend MUST use React + TypeScript.  
-- All new code SHOULD pass linting and tests via GitHub Actions CI.
+- backend MUST stay Node.js + Express + PostgreSQL + Prisma + JWT
+- real-time MUST stay Socket.IO or WebSockets
+- frontend MUST stay React + TypeScript

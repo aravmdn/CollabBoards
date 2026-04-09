@@ -12,7 +12,6 @@ import {
 
 const router = Router();
 
-// Validation schemas
 const createBoardSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(1000).optional(),
@@ -23,9 +22,13 @@ const updateBoardSchema = z.object({
   description: z.string().max(1000).optional(),
 });
 
+const createListSchema = z.object({
+  title: z.string().min(1).max(200),
+});
+
 // GET /api/workspaces/:workspaceId/boards - List boards in a workspace (paginated)
 router.get(
-  '/workspaces/:workspaceId/boards',
+  '/:workspaceId/boards',
   isAuthenticated,
   isWorkspaceMember,
   async (req: AuthenticatedRequest, res, next) => {
@@ -52,7 +55,7 @@ router.get(
 
 // POST /api/workspaces/:workspaceId/boards - Create a new board
 router.post(
-  '/workspaces/:workspaceId/boards',
+  '/:workspaceId/boards',
   isAuthenticated,
   isWorkspaceMember,
   async (req: AuthenticatedRequest, res, next) => {
@@ -106,7 +109,6 @@ router.patch(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      // Verify user has access to the board's workspace
       await getBoardById(req.params.id, req.user.userId);
       const body = updateBoardSchema.parse(req.body);
 
@@ -134,7 +136,6 @@ router.delete(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      // Verify user has access to the board's workspace
       await getBoardById(req.params.id, req.user.userId);
       await deleteBoard(req.params.id);
       res.status(204).send();
@@ -144,5 +145,36 @@ router.delete(
   },
 );
 
-export default router;
+// POST /api/boards/:boardId/lists - Create a new list
+router.post(
+  '/:boardId/lists',
+  isAuthenticated,
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
 
+      await getBoardById(req.params.boardId, req.user.userId);
+      const body = createListSchema.parse(req.body);
+      const { createList } = await import('../services/listService');
+
+      const list = await createList({
+        title: body.title,
+        boardId: req.params.boardId,
+      });
+
+      res.status(201).json(list);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: 'Validation error',
+          errors: err.errors,
+        });
+      }
+      next(err);
+    }
+  },
+);
+
+export default router;
