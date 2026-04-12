@@ -3,6 +3,11 @@ import {
   broadcastToBoard,
   SOCKET_EVENTS,
 } from '../lib/socketEvents';
+import {
+  ensureWorkspaceAssignee,
+  requireCardMembership,
+  requireListMembership,
+} from './accessControl';
 
 export interface CreateCardInput {
   title: string;
@@ -23,7 +28,10 @@ export interface UpdateCardInput {
   labels?: string[];
 }
 
-export async function createCard(input: CreateCardInput) {
+export async function createCard(input: CreateCardInput, userId: string) {
+  const listScope = await requireListMembership(input.listId, userId);
+  await ensureWorkspaceAssignee(input.assigneeId, listScope.workspaceId);
+
   // Get the current max position for cards in this list
   const maxPosition = await prisma.card.findFirst({
     where: { listId: input.listId },
@@ -165,25 +173,23 @@ export async function getCardById(id: string, userId: string) {
   return card;
 }
 
-export async function updateCard(id: string, input: UpdateCardInput) {
-  const existingCard = await prisma.card.findUnique({
-    where: { id },
-    include: {
-      list: {
-        include: {
-          board: true,
-        },
-      },
-    },
-  });
-
-  if (!existingCard) {
-    throw Object.assign(new Error('Card not found'), { status: 404 });
-  }
+export async function updateCard(
+  id: string,
+  input: UpdateCardInput,
+  userId: string,
+) {
+  const existingCard = await requireCardMembership(id, userId);
 
   // If moving to a different list, get max position in new list
   let newPosition = input.position;
   if (input.listId && input.listId !== existingCard.listId) {
+    const targetList = await requireListMembership(input.listId, userId);
+    if (targetList.workspaceId !== existingCard.workspaceId) {
+      throw Object.assign(new Error('Card cannot move across workspaces'), {
+        status: 400,
+      });
+    }
+
     const maxPosition = await prisma.card.findFirst({
       where: { listId: input.listId },
       orderBy: { position: 'desc' },
@@ -191,6 +197,11 @@ export async function updateCard(id: string, input: UpdateCardInput) {
     });
     newPosition = maxPosition ? maxPosition.position + 1 : 0;
   }
+
+  await ensureWorkspaceAssignee(
+    input.assigneeId,
+    existingCard.workspaceId,
+  );
 
   const updateData: UpdateCardInput = {
     ...input,
@@ -258,30 +269,14 @@ export async function updateCard(id: string, input: UpdateCardInput) {
   return card;
 }
 
-export async function deleteCard(id: string) {
-  // Get card info before deletion for broadcasting
-  const card = await prisma.card.findUnique({
-    where: { id },
-    include: {
-      list: {
-        include: {
-          board: {
-            select: {
-              id: true,
-            },
-          },
-        },
-      },
-    },
-  });
+export async function deleteCard(id: string, userId: string) {
+  const card = await requireCardMembership(id, userId);
 
   await prisma.card.delete({
     where: { id },
   });
 
-  if (card) {
-    // Broadcast card deleted event
-    broadcastToBoard(card.list.board.id, SOCKET_EVENTS.CARD_DELETED, { id });
-  }
+  // Broadcast card deleted event
+  broadcastToBoard(card.boardId, SOCKET_EVENTS.CARD_DELETED, { id });
 }
 

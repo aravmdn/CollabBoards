@@ -48,6 +48,48 @@ jest.mock('../middleware/rbac', () => ({
 
       next();
     },
+  requireWorkspaceManagerRole:
+    () =>
+    (
+      req: { user?: { workspaceId?: string; roles?: string[] } },
+      _res: unknown,
+      next: () => void,
+    ) => {
+      if (req.user) {
+        req.user.workspaceId = 'workspace-1';
+        req.user.roles = ['OWNER'];
+      }
+
+      next();
+    },
+  requireBoardManagerRole:
+    () =>
+    (
+      req: { user?: { workspaceId?: string; roles?: string[] } },
+      _res: unknown,
+      next: () => void,
+    ) => {
+      if (req.user) {
+        req.user.workspaceId = 'workspace-1';
+        req.user.roles = ['OWNER'];
+      }
+
+      next();
+    },
+  requireListManagerRole:
+    () =>
+    (
+      req: { user?: { workspaceId?: string; roles?: string[] } },
+      _res: unknown,
+      next: () => void,
+    ) => {
+      if (req.user) {
+        req.user.workspaceId = 'workspace-1';
+        req.user.roles = ['OWNER'];
+      }
+
+      next();
+    },
 }));
 
 describe('API route mounting', () => {

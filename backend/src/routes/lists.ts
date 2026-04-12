@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { isAuthenticated, AuthenticatedRequest } from '../middleware/auth';
+import { requireListManagerRole } from '../middleware/rbac';
 import { getListById, updateList, deleteList } from '../services/listService';
 
 const router = Router();
@@ -40,6 +41,7 @@ router.get(
 router.patch(
   '/:id',
   isAuthenticated,
+  requireListManagerRole(),
   async (req: AuthenticatedRequest, res, next) => {
     try {
       if (!req.user) {
@@ -49,7 +51,11 @@ router.patch(
       await getListById(req.params.id, req.user.userId);
       const body = updateListSchema.parse(req.body);
 
-      const updatedList = await updateList(req.params.id, body);
+      const updatedList = await updateList(
+        req.params.id,
+        body,
+        req.user.userId,
+      );
       res.json(updatedList);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -67,6 +73,7 @@ router.patch(
 router.delete(
   '/:id',
   isAuthenticated,
+  requireListManagerRole(),
   async (req: AuthenticatedRequest, res, next) => {
     try {
       if (!req.user) {
@@ -74,7 +81,7 @@ router.delete(
       }
 
       await getListById(req.params.id, req.user.userId);
-      await deleteList(req.params.id);
+      await deleteList(req.params.id, req.user.userId);
       res.status(204).send();
     } catch (err) {
       next(err);
@@ -92,18 +99,22 @@ router.post(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      await getListById(req.params.listId, req.user.userId);
+      const user = req.user;
+      await getListById(req.params.listId, user.userId);
       const body = createCardSchema.parse(req.body);
       const { createCard } = await import('../services/cardService');
 
-      const card = await createCard({
-        title: body.title,
-        description: body.description,
-        listId: req.params.listId,
-        dueDate: body.dueDate,
-        assigneeId: body.assigneeId,
-        labels: body.labels,
-      });
+      const card = await createCard(
+        {
+          title: body.title,
+          description: body.description,
+          listId: req.params.listId,
+          dueDate: body.dueDate,
+          assigneeId: body.assigneeId,
+          labels: body.labels,
+        },
+        user.userId,
+      );
 
       res.status(201).json(card);
     } catch (err) {

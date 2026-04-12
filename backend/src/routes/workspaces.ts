@@ -105,8 +105,17 @@ router.patch(
   requireWorkspaceRole(WorkspaceRole.OWNER, WorkspaceRole.ADMIN),
   async (req: AuthenticatedRequest, res, next) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const user = req.user;
       const body = updateWorkspaceSchema.parse(req.body);
-      const workspace = await updateWorkspace(req.params.workspaceId, body);
+      const workspace = await updateWorkspace(
+        req.params.workspaceId,
+        body,
+        user.userId,
+      );
       res.json(workspace);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -127,7 +136,12 @@ router.delete(
   requireWorkspaceRole(WorkspaceRole.OWNER),
   async (req: AuthenticatedRequest, res, next) => {
     try {
-      await deleteWorkspace(req.params.workspaceId);
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const user = req.user;
+      await deleteWorkspace(req.params.workspaceId, user.userId);
       res.status(204).send();
     } catch (err) {
       next(err);

@@ -3,6 +3,10 @@ import {
   broadcastToBoard,
   SOCKET_EVENTS,
 } from '../lib/socketEvents';
+import {
+  requireCardMembership,
+  requireCommentMembership,
+} from './accessControl';
 
 export interface CreateCommentInput {
   body: string;
@@ -82,29 +86,7 @@ export async function createComment(input: CreateCommentInput) {
 }
 
 export async function getCardComments(cardId: string, userId: string) {
-  // Verify the card exists and user has access
-  const card = await prisma.card.findFirst({
-    where: {
-      id: cardId,
-      list: {
-        board: {
-          workspace: {
-            members: {
-              some: {
-                userId,
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!card) {
-    throw Object.assign(new Error('Card not found or access denied'), {
-      status: 404,
-    });
-  }
+  await requireCardMembership(cardId, userId);
 
   const comments = await prisma.comment.findMany({
     where: {
@@ -128,24 +110,7 @@ export async function getCardComments(cardId: string, userId: string) {
 }
 
 export async function deleteComment(id: string, userId: string) {
-  const comment = await prisma.comment.findUnique({
-    where: { id },
-    include: {
-      card: {
-        include: {
-          list: {
-            select: {
-              boardId: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!comment) {
-    throw Object.assign(new Error('Comment not found'), { status: 404 });
-  }
+  const comment = await requireCommentMembership(id, userId);
 
   // Only the author can delete their comment
   if (comment.authorId !== userId) {
@@ -154,13 +119,11 @@ export async function deleteComment(id: string, userId: string) {
     });
   }
 
-  const boardId = comment.card.list.boardId;
-
   await prisma.comment.delete({
     where: { id },
   });
 
   // Broadcast to board room
-  broadcastToBoard(boardId, SOCKET_EVENTS.COMMENT_DELETED, { id });
+  broadcastToBoard(comment.boardId, SOCKET_EVENTS.COMMENT_DELETED, { id });
 }
 

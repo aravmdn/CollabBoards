@@ -79,3 +79,108 @@ export const requireWorkspaceRole =
     });
   };
 
+const workspaceManagerRoles = [WorkspaceRole.OWNER, WorkspaceRole.ADMIN];
+
+async function getBoardWorkspaceId(boardId: string) {
+  const board = await prisma.board.findUnique({
+    where: { id: boardId },
+    select: { workspaceId: true },
+  });
+
+  return board?.workspaceId ?? null;
+}
+
+async function getListWorkspaceId(listId: string) {
+  const list = await prisma.list.findUnique({
+    where: { id: listId },
+    select: {
+      board: {
+        select: {
+          workspaceId: true,
+        },
+      },
+    },
+  });
+
+  return list?.board.workspaceId ?? null;
+}
+
+async function enforceScopedRole(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+  workspaceId: string | null,
+  missingMessage: string,
+  allowedRoles: WorkspaceRole[],
+) {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  if (!workspaceId) {
+    return res.status(404).json({ message: missingMessage });
+  }
+
+  const membership = await prisma.workspaceMember.findUnique({
+    where: {
+      userId_workspaceId: {
+        userId: req.user.userId,
+        workspaceId,
+      },
+    },
+  });
+
+  if (!membership) {
+    return res.status(403).json({ message: 'Not a member of this workspace' });
+  }
+
+  if (!allowedRoles.includes(membership.role)) {
+    return res.status(403).json({
+      message: `Requires one of: ${allowedRoles.join(', ')}`,
+    });
+  }
+
+  req.user.workspaceId = workspaceId;
+  req.user.roles = [membership.role];
+  return next();
+}
+
+export const requireBoardRole =
+  (...allowedRoles: WorkspaceRole[]) =>
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const boardId = String(req.params.id || req.params.boardId || '');
+    const workspaceId = boardId ? await getBoardWorkspaceId(boardId) : null;
+    return enforceScopedRole(
+      req,
+      res,
+      next,
+      workspaceId,
+      'Board not found',
+      allowedRoles,
+    );
+  };
+
+export const requireListRole =
+  (...allowedRoles: WorkspaceRole[]) =>
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const listId = String(req.params.id || req.params.listId || '');
+    const workspaceId = listId ? await getListWorkspaceId(listId) : null;
+    return enforceScopedRole(
+      req,
+      res,
+      next,
+      workspaceId,
+      'List not found',
+      allowedRoles,
+    );
+  };
+
+export const requireWorkspaceManagerRole = () =>
+  requireWorkspaceRole(...workspaceManagerRoles);
+
+export const requireBoardManagerRole = () =>
+  requireBoardRole(...workspaceManagerRoles);
+
+export const requireListManagerRole = () =>
+  requireListRole(...workspaceManagerRoles);
+

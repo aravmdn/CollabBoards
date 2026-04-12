@@ -47,16 +47,21 @@ router.patch(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
+      const user = req.user;
       await getCardById(req.params.id, req.user.userId);
       const body = updateCardSchema.parse(req.body);
 
       if (body.listId) {
         await import('../services/listService').then((m) =>
-          m.getListById(body.listId!, req.user!.userId),
+          m.getListById(body.listId!, user.userId),
         );
       }
 
-      const updatedCard = await updateCard(req.params.id, body);
+      const updatedCard = await updateCard(
+        req.params.id,
+        body,
+        user.userId,
+      );
       res.json(updatedCard);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -80,8 +85,9 @@ router.delete(
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
-      await getCardById(req.params.id, req.user.userId);
-      await deleteCard(req.params.id);
+      const user = req.user;
+      await getCardById(req.params.id, user.userId);
+      await deleteCard(req.params.id, user.userId);
       res.status(204).send();
     } catch (err) {
       next(err);

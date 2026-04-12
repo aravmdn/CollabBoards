@@ -5,9 +5,6 @@ jest.mock('../lib/prisma', () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
-    workspaceMember: {
-      findUnique: jest.fn(),
-    },
   },
 }));
 
@@ -20,11 +17,20 @@ jest.mock('../lib/socketEvents', () => ({
   broadcastToWorkspace: jest.fn(),
 }));
 
+jest.mock('./accessControl', () => ({
+  requireWorkspaceManagerRole: jest.fn(),
+  requireBoardManagerRole: jest.fn(),
+}));
+
 import { prisma } from '../lib/prisma';
 import {
   broadcastToWorkspace,
   SOCKET_EVENTS,
 } from '../lib/socketEvents';
+import {
+  requireBoardManagerRole,
+  requireWorkspaceManagerRole,
+} from './accessControl';
 import {
   createBoard,
   deleteBoard,
@@ -40,10 +46,18 @@ const prismaMock = prisma as unknown as {
 };
 
 const broadcastMock = broadcastToWorkspace as jest.Mock;
+const requireWorkspaceManagerRoleMock =
+  requireWorkspaceManagerRole as jest.Mock;
+const requireBoardManagerRoleMock = requireBoardManagerRole as jest.Mock;
 
 describe('boardService socket broadcasts', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    requireWorkspaceManagerRoleMock.mockResolvedValue({ role: 'OWNER' });
+    requireBoardManagerRoleMock.mockResolvedValue({
+      id: 'board-1',
+      workspaceId: 'workspace-1',
+    });
   });
 
   it('broadcasts board created to workspace room', async () => {
@@ -58,7 +72,7 @@ describe('boardService socket broadcasts', () => {
     await createBoard({
       title: 'Board',
       workspaceId: 'workspace-1',
-    });
+    }, 'user-1');
 
     expect(broadcastMock).toHaveBeenCalledWith(
       'workspace-1',
@@ -76,7 +90,7 @@ describe('boardService socket broadcasts', () => {
       lists: [],
     });
 
-    await updateBoard('board-1', { title: 'Renamed' });
+    await updateBoard('board-1', { title: 'Renamed' }, 'user-1');
 
     expect(broadcastMock).toHaveBeenCalledWith(
       'workspace-1',
@@ -91,7 +105,7 @@ describe('boardService socket broadcasts', () => {
       workspaceId: 'workspace-1',
     });
 
-    await deleteBoard('board-1');
+    await deleteBoard('board-1', 'user-1');
 
     expect(broadcastMock).toHaveBeenCalledWith(
       'workspace-1',
