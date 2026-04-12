@@ -20,7 +20,6 @@ Explicitly deferred after this recovery pass:
 - workspace member management UI
 - drag-and-drop movement
 - production deployment validation
-- full DB-backed integration coverage
 
 ### 1. Functional Requirements
 

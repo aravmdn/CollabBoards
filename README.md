@@ -14,7 +14,11 @@ Current non-goals for this recovery pass:
 - attachment upload UI
 - member management UI
 - drag-and-drop card movement
-- production deployment verification
+- automated deploy execution
+
+Current deployment behavior:
+
+- Railway backend start applies committed Prisma migrations before launching the API server.
 
 ### Stack
 
@@ -193,9 +197,38 @@ Manual smoke with configured DB:
 - comment create/list
 - frontend login, workspace select, board open, comment post
 
+Automated production-style smoke:
+
+```bash
+npm run smoke -- --backend-url https://your-backend.example.com --frontend-url https://your-frontend.example.com
+```
+
+This command:
+
+- checks `GET /api/health`
+- registers a disposable user, then exercises login, refresh, and logout
+- creates and refetches workspace, board, list, card, and comment data over REST
+- joins `workspace:{id}` and `board:{id}` Socket.IO rooms
+- verifies board/card refresh after `board:created`, `list:created`, `card:created`, `card:moved`, and `comment:added`
+- cleans up the disposable board, list, card, and comment data it created
+
+Local production-style proof:
+
+```bash
+npm run build --workspace backend
+npm run build --workspace frontend
+npm run smoke:local
+```
+
+`smoke:local` starts a temporary embedded PostgreSQL instance, applies committed Prisma migrations, boots the backend from `dist/`, serves the built frontend with `vite preview`, and runs the same smoke flow against those local URLs.
+
+Deployment note:
+
+- Railway uses `npm run start:railway --workspace backend`, which runs `prisma migrate deploy` before `node dist/index.js`.
+
 ### Known Gaps
 
 - No attachment upload route or UI recovery.
 - No rich-text editor recovery.
 - Card move UI is simple button-based step, not drag-and-drop.
-- Production smoke still pending.
+- No deployment job runs the smoke command automatically yet.
