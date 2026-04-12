@@ -180,6 +180,8 @@ npm run build --workspace backend
 npm run build --workspace frontend
 ```
 
+`npm test --workspace backend` now includes a DB-backed integration suite for the auth, workspace, board, card, and comment flow by booting an embedded PostgreSQL instance and applying the committed Prisma migrations.
+
 Manual smoke with configured DB:
 
 - backend `GET /api/health`
@@ -193,7 +195,6 @@ Manual smoke with configured DB:
 
 ### Known Gaps
 
-- No DB-backed integration tests yet. Current tests cover route mounts, metadata contract, and selected service behavior.
 - No attachment upload route or UI recovery.
 - No rich-text editor recovery.
 - Card move UI is simple button-based step, not drag-and-drop.

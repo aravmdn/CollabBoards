@@ -68,7 +68,7 @@
 - [x] backend service behavior tests
 - [x] frontend Vitest render flow tests
 - [x] CI runs install, lint, tests, backend build, frontend build
-- [ ] DB-backed integration tests for auth/workspace/board flow
+- [x] DB-backed integration tests for auth/workspace/board/card/comment flow
 
 ### 9. Deployment and Ops
 - [x] backend build works for Railway-style start
