@@ -11,7 +11,7 @@
 - [x] Card metadata recovered in schema: assignee, labels, due date.
 - [x] Seed script exists and matches current schema.
 - [x] Prisma migrations committed.
-- [ ] Full tenant-leak audit complete across every query path.
+- [x] Full tenant-leak audit complete across every query path.
 
 ### 3. Auth and RBAC
 - [x] `/api/auth/register`
@@ -44,7 +44,7 @@
 - [x] workspace and board rooms
 - [x] list/card/comment broadcasts on core mutations
 - [x] frontend board refresh on socket events
-- [ ] dedicated socket smoke test
+- [x] dedicated socket smoke test
 
 ### 7. Frontend Core Flow
 - [x] login/register screen
@@ -72,6 +72,7 @@
 
 ### 9. Deployment and Ops
 - [x] backend build works for Railway-style start
+- [x] Railway backend deploy path applies committed Prisma migrations before startup
 - [x] frontend production build works
 - [x] local DB runbook documented
-- [ ] production auth and socket verification
+- [x] production-style auth and socket verification command
