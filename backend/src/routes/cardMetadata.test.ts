@@ -65,7 +65,7 @@ describe('card metadata routes', () => {
       dueDate: new Date('2026-04-15T10:00:00.000Z'),
       assigneeId: 'user-2',
       labels: ['backend'],
-    });
+    }, 'user-1');
   });
 
   it('allows clearing nullable metadata on card update', async () => {
@@ -86,10 +86,14 @@ describe('card metadata routes', () => {
       });
 
     expect(response.status).toBe(200);
-    expect(updateCardMock).toHaveBeenCalledWith('card-1', {
-      assigneeId: null,
-      dueDate: null,
-      labels: [],
-    });
+    expect(updateCardMock).toHaveBeenCalledWith(
+      'card-1',
+      {
+        assigneeId: null,
+        dueDate: null,
+        labels: [],
+      },
+      'user-1',
+    );
   });
 });

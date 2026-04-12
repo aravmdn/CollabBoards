@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { isAuthenticated, AuthenticatedRequest } from '../middleware/auth';
-import { isWorkspaceMember } from '../middleware/rbac';
+import {
+  isWorkspaceMember,
+  requireBoardManagerRole,
+  requireWorkspaceManagerRole,
+} from '../middleware/rbac';
 import {
   createBoard,
   getBoardById,
@@ -57,16 +61,24 @@ router.get(
 router.post(
   '/:workspaceId/boards',
   isAuthenticated,
-  isWorkspaceMember,
+  requireWorkspaceManagerRole(),
   async (req: AuthenticatedRequest, res, next) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const user = req.user;
       const body = createBoardSchema.parse(req.body);
 
-      const board = await createBoard({
-        title: body.title,
-        description: body.description,
-        workspaceId: req.params.workspaceId,
-      });
+      const board = await createBoard(
+        {
+          title: body.title,
+          description: body.description,
+          workspaceId: req.params.workspaceId,
+        },
+        user.userId,
+      );
 
       res.status(201).json(board);
     } catch (err) {
@@ -103,6 +115,7 @@ router.get(
 router.patch(
   '/:id',
   isAuthenticated,
+  requireBoardManagerRole(),
   async (req: AuthenticatedRequest, res, next) => {
     try {
       if (!req.user) {
@@ -112,7 +125,11 @@ router.patch(
       await getBoardById(req.params.id, req.user.userId);
       const body = updateBoardSchema.parse(req.body);
 
-      const updatedBoard = await updateBoard(req.params.id, body);
+      const updatedBoard = await updateBoard(
+        req.params.id,
+        body,
+        req.user.userId,
+      );
       res.json(updatedBoard);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -130,6 +147,7 @@ router.patch(
 router.delete(
   '/:id',
   isAuthenticated,
+  requireBoardManagerRole(),
   async (req: AuthenticatedRequest, res, next) => {
     try {
       if (!req.user) {
@@ -137,7 +155,7 @@ router.delete(
       }
 
       await getBoardById(req.params.id, req.user.userId);
-      await deleteBoard(req.params.id);
+      await deleteBoard(req.params.id, req.user.userId);
       res.status(204).send();
     } catch (err) {
       next(err);
@@ -149,20 +167,25 @@ router.delete(
 router.post(
   '/:boardId/lists',
   isAuthenticated,
+  requireBoardManagerRole(),
   async (req: AuthenticatedRequest, res, next) => {
     try {
       if (!req.user) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
+      const user = req.user;
       await getBoardById(req.params.boardId, req.user.userId);
       const body = createListSchema.parse(req.body);
       const { createList } = await import('../services/listService');
 
-      const list = await createList({
-        title: body.title,
-        boardId: req.params.boardId,
-      });
+      const list = await createList(
+        {
+          title: body.title,
+          boardId: req.params.boardId,
+        },
+        user.userId,
+      );
 
       res.status(201).json(list);
     } catch (err) {

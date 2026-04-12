@@ -3,6 +3,10 @@ import {
   broadcastToWorkspace,
   SOCKET_EVENTS,
 } from '../lib/socketEvents';
+import {
+  requireBoardManagerRole,
+  requireWorkspaceManagerRole,
+} from './accessControl';
 
 export interface CreateBoardInput {
   title: string;
@@ -15,7 +19,9 @@ export interface UpdateBoardInput {
   description?: string;
 }
 
-export async function createBoard(input: CreateBoardInput) {
+export async function createBoard(input: CreateBoardInput, userId: string) {
+  await requireWorkspaceManagerRole(input.workspaceId, userId);
+
   const board = await prisma.board.create({
     data: {
       title: input.title,
@@ -158,7 +164,13 @@ export async function getWorkspaceBoards(
   };
 }
 
-export async function updateBoard(id: string, input: UpdateBoardInput) {
+export async function updateBoard(
+  id: string,
+  input: UpdateBoardInput,
+  userId: string,
+) {
+  await requireBoardManagerRole(id, userId);
+
   const board = await prisma.board.update({
     where: { id },
     data: input,
@@ -182,7 +194,9 @@ export async function updateBoard(id: string, input: UpdateBoardInput) {
   return board;
 }
 
-export async function deleteBoard(id: string) {
+export async function deleteBoard(id: string, userId: string) {
+  await requireBoardManagerRole(id, userId);
+
   const board = await prisma.board.delete({
     where: { id },
   });

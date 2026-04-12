@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { WorkspaceRole } from '@prisma/client';
+import { requireWorkspaceRole } from './accessControl';
 
 export interface CreateWorkspaceInput {
   name: string;
@@ -145,7 +146,13 @@ export async function getUserWorkspaces(
 export async function updateWorkspace(
   id: string,
   input: UpdateWorkspaceInput,
+  userId: string,
 ) {
+  await requireWorkspaceRole(id, userId, [
+    WorkspaceRole.OWNER,
+    WorkspaceRole.ADMIN,
+  ]);
+
   const workspace = await prisma.workspace.update({
     where: { id },
     data: input,
@@ -167,7 +174,9 @@ export async function updateWorkspace(
   return workspace;
 }
 
-export async function deleteWorkspace(id: string) {
+export async function deleteWorkspace(id: string, userId: string) {
+  await requireWorkspaceRole(id, userId, [WorkspaceRole.OWNER]);
+
   await prisma.workspace.delete({
     where: { id },
   });

@@ -3,6 +3,10 @@ import {
   broadcastToBoard,
   SOCKET_EVENTS,
 } from '../lib/socketEvents';
+import {
+  requireBoardManagerRole,
+  requireListManagerRole,
+} from './accessControl';
 
 export interface CreateListInput {
   title: string;
@@ -14,7 +18,9 @@ export interface UpdateListInput {
   position?: number;
 }
 
-export async function createList(input: CreateListInput) {
+export async function createList(input: CreateListInput, userId: string) {
+  await requireBoardManagerRole(input.boardId, userId);
+
   // Get the current max position for lists in this board
   const maxPosition = await prisma.list.findFirst({
     where: { boardId: input.boardId },
@@ -113,7 +119,13 @@ export async function getListById(id: string, userId: string) {
   return list;
 }
 
-export async function updateList(id: string, input: UpdateListInput) {
+export async function updateList(
+  id: string,
+  input: UpdateListInput,
+  userId: string,
+) {
+  await requireListManagerRole(id, userId);
+
   const list = await prisma.list.update({
     where: { id },
     data: input,
@@ -148,7 +160,9 @@ export async function updateList(id: string, input: UpdateListInput) {
   return list;
 }
 
-export async function deleteList(id: string) {
+export async function deleteList(id: string, userId: string) {
+  await requireListManagerRole(id, userId);
+
   // Get list info before deletion for broadcasting
   const list = await prisma.list.findUnique({
     where: { id },

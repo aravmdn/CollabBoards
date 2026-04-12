@@ -19,6 +19,10 @@ export const getSocketIO = (): SocketIO => {
  * Broadcast events to board room
  */
 export const broadcastToBoard = (boardId: string, event: string, data: unknown) => {
+  if (!ioInstance) {
+    return;
+  }
+
   const io = getSocketIO();
   const room = `${ROOM_PREFIXES.BOARD}${boardId}`;
   io.to(room).emit(event, data);
@@ -32,6 +36,10 @@ export const broadcastToWorkspace = (
   event: string,
   data: unknown,
 ) => {
+  if (!ioInstance) {
+    return;
+  }
+
   const io = getSocketIO();
   const room = `${ROOM_PREFIXES.WORKSPACE}${workspaceId}`;
   io.to(room).emit(event, data);
