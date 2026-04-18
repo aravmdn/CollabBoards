@@ -182,3 +182,119 @@ export async function deleteWorkspace(id: string, userId: string) {
   });
 }
 
+const userSelect = {
+  id: true,
+  email: true,
+  name: true,
+} as const;
+
+export async function listWorkspaceMembers(workspaceId: string, userId: string) {
+  await requireWorkspaceRole(workspaceId, userId, [
+    WorkspaceRole.OWNER,
+    WorkspaceRole.ADMIN,
+    WorkspaceRole.MEMBER,
+  ]);
+
+  return prisma.workspaceMember.findMany({
+    where: { workspaceId },
+    include: { user: { select: userSelect } },
+    orderBy: { createdAt: 'asc' },
+  });
+}
+
+export async function inviteWorkspaceMember(
+  workspaceId: string,
+  actorId: string,
+  email: string,
+  role: WorkspaceRole,
+) {
+  await requireWorkspaceRole(workspaceId, actorId, [
+    WorkspaceRole.OWNER,
+    WorkspaceRole.ADMIN,
+  ]);
+
+  if (role === WorkspaceRole.OWNER) {
+    throw Object.assign(new Error('Cannot assign OWNER role via invite'), { status: 400 });
+  }
+
+  const target = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+
+  if (!target) {
+    throw Object.assign(new Error('User not found'), { status: 404 });
+  }
+
+  const existing = await prisma.workspaceMember.findUnique({
+    where: { userId_workspaceId: { userId: target.id, workspaceId } },
+  });
+
+  if (existing) {
+    throw Object.assign(new Error('User is already a member'), { status: 409 });
+  }
+
+  return prisma.workspaceMember.create({
+    data: { workspaceId, userId: target.id, role },
+    include: { user: { select: userSelect } },
+  });
+}
+
+export async function updateWorkspaceMemberRole(
+  workspaceId: string,
+  actorId: string,
+  memberId: string,
+  role: WorkspaceRole,
+) {
+  await requireWorkspaceRole(workspaceId, actorId, [WorkspaceRole.OWNER]);
+
+  if (role === WorkspaceRole.OWNER) {
+    throw Object.assign(new Error('Cannot assign OWNER role'), { status: 400 });
+  }
+
+  const membership = await prisma.workspaceMember.findUnique({
+    where: { userId_workspaceId: { userId: memberId, workspaceId } },
+  });
+
+  if (!membership) {
+    throw Object.assign(new Error('Member not found'), { status: 404 });
+  }
+
+  if (membership.role === WorkspaceRole.OWNER) {
+    throw Object.assign(new Error('Cannot change role of workspace owner'), { status: 400 });
+  }
+
+  return prisma.workspaceMember.update({
+    where: { userId_workspaceId: { userId: memberId, workspaceId } },
+    data: { role },
+    include: { user: { select: userSelect } },
+  });
+}
+
+export async function removeWorkspaceMember(
+  workspaceId: string,
+  actorId: string,
+  memberId: string,
+) {
+  await requireWorkspaceRole(workspaceId, actorId, [
+    WorkspaceRole.OWNER,
+    WorkspaceRole.ADMIN,
+  ]);
+
+  const membership = await prisma.workspaceMember.findUnique({
+    where: { userId_workspaceId: { userId: memberId, workspaceId } },
+  });
+
+  if (!membership) {
+    throw Object.assign(new Error('Member not found'), { status: 404 });
+  }
+
+  if (membership.role === WorkspaceRole.OWNER) {
+    throw Object.assign(new Error('Cannot remove workspace owner'), { status: 400 });
+  }
+
+  await prisma.workspaceMember.delete({
+    where: { userId_workspaceId: { userId: memberId, workspaceId } },
+  });
+}
+

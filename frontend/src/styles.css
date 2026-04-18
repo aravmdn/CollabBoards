@@ -378,3 +378,27 @@ textarea {
     order: 3;
   }
 }
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  font-size: 0.875rem;
+}
+
+.member-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-row select {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.4rem;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 4px;
+}

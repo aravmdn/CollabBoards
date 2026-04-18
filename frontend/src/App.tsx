@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth';
 import { useSocket } from './hooks/useSocket';
 import { disconnectSocket } from './lib/socket';
 import { api } from './lib/api';
+import { WorkspaceMembers } from './components/WorkspaceMembers';
 
 interface UserSummary {
   id: string;
@@ -85,6 +86,16 @@ interface PaginatedWorkspaces {
 interface PaginatedBoards {
   boards: BoardListItem[];
 }
+
+const decodeJwtUserId = (token: string | undefined): string | null => {
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1])) as { userId?: string };
+    return payload.userId ?? null;
+  } catch {
+    return null;
+  }
+};
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof AxiosError) {
@@ -646,6 +657,13 @@ function App() {
               </button>
             </form>
           </section>
+
+          {selectedWorkspaceId ? (
+            <WorkspaceMembers
+              workspaceId={selectedWorkspaceId}
+              currentUserId={decodeJwtUserId(auth.tokens?.accessToken) ?? ''}
+            />
+          ) : null}
 
           <section>
             <h2>Boards</h2>

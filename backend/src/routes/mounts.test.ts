@@ -26,6 +26,10 @@ describe('documented route mounts', () => {
     ['delete comment by id', 'delete', '/api/comments/test-comment'],
     ['post card comments', 'post', '/api/cards/test-card/comments'],
     ['get card comments', 'get', '/api/cards/test-card/comments'],
+    ['get workspace members', 'get', '/api/workspaces/test-workspace/members'],
+    ['post workspace members', 'post', '/api/workspaces/test-workspace/members'],
+    ['patch workspace member', 'patch', '/api/workspaces/test-workspace/members/test-member'],
+    ['delete workspace member', 'delete', '/api/workspaces/test-workspace/members/test-member'],
   ] as const)(
     '%s mounted under documented /api path',
     async (_name, method, path) => {

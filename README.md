@@ -12,7 +12,6 @@ Current non-goals for this recovery pass:
 
 - rich-text card editor UI
 - attachment upload UI
-- member management UI
 - drag-and-drop card movement
 - automated deploy execution
 
@@ -134,6 +133,13 @@ Comments:
 - `POST /api/cards/:cardId/comments`
 - `GET /api/cards/:cardId/comments`
 - `DELETE /api/comments/:id`
+
+Members:
+
+- `GET /api/workspaces/:workspaceId/members`
+- `POST /api/workspaces/:workspaceId/members`
+- `PATCH /api/workspaces/:workspaceId/members/:memberId`
+- `DELETE /api/workspaces/:workspaceId/members/:memberId`
 
 Card metadata now supported in backend and frontend display:
 

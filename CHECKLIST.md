@@ -21,7 +21,7 @@
 - [x] `isAuthenticated`
 - [x] workspace membership checks
 - [x] workspace role checks for workspace update/delete
-- [ ] member management endpoints and UI
+- [x] member management endpoints and UI
 
 ### 4. REST API Contract
 - [x] `/api/workspaces*` routes mounted and tested

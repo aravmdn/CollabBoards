@@ -12,6 +12,10 @@ import {
   getUserWorkspaces,
   updateWorkspace,
   deleteWorkspace,
+  listWorkspaceMembers,
+  inviteWorkspaceMember,
+  updateWorkspaceMemberRole,
+  removeWorkspaceMember,
 } from '../services/workspaceService';
 
 const router = Router();
@@ -23,6 +27,15 @@ const createWorkspaceSchema = z.object({
 
 const updateWorkspaceSchema = z.object({
   name: z.string().min(1).max(100).optional(),
+});
+
+const inviteMemberSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(['ADMIN', 'MEMBER']),
+});
+
+const updateMemberRoleSchema = z.object({
+  role: z.enum(['ADMIN', 'MEMBER']),
 });
 
 // GET /api/workspaces - List workspaces for current user (paginated)
@@ -142,6 +155,92 @@ router.delete(
 
       const user = req.user;
       await deleteWorkspace(req.params.workspaceId, user.userId);
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// GET /api/workspaces/:workspaceId/members - List workspace members
+router.get(
+  '/:workspaceId/members',
+  isAuthenticated,
+  isWorkspaceMember,
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+      const members = await listWorkspaceMembers(req.params.workspaceId, req.user.userId);
+      res.json(members);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// POST /api/workspaces/:workspaceId/members - Invite member by email
+router.post(
+  '/:workspaceId/members',
+  isAuthenticated,
+  requireWorkspaceRole(WorkspaceRole.OWNER, WorkspaceRole.ADMIN),
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+      const body = inviteMemberSchema.parse(req.body);
+      const member = await inviteWorkspaceMember(
+        req.params.workspaceId,
+        req.user.userId,
+        body.email,
+        body.role as WorkspaceRole,
+      );
+      res.status(201).json(member);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      next(err);
+    }
+  },
+);
+
+// PATCH /api/workspaces/:workspaceId/members/:memberId - Update member role
+router.patch(
+  '/:workspaceId/members/:memberId',
+  isAuthenticated,
+  requireWorkspaceRole(WorkspaceRole.OWNER),
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+      const body = updateMemberRoleSchema.parse(req.body);
+      const member = await updateWorkspaceMemberRole(
+        req.params.workspaceId,
+        req.user.userId,
+        req.params.memberId,
+        body.role as WorkspaceRole,
+      );
+      res.json(member);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Validation error', errors: err.errors });
+      }
+      next(err);
+    }
+  },
+);
+
+// DELETE /api/workspaces/:workspaceId/members/:memberId - Remove member
+router.delete(
+  '/:workspaceId/members/:memberId',
+  isAuthenticated,
+  requireWorkspaceRole(WorkspaceRole.OWNER, WorkspaceRole.ADMIN),
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+      await removeWorkspaceMember(
+        req.params.workspaceId,
+        req.user.userId,
+        req.params.memberId,
+      );
       res.status(204).send();
     } catch (err) {
       next(err);
