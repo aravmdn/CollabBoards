@@ -139,6 +139,16 @@ function App() {
   const [cardDrafts, setCardDrafts] = useState<Record<string, string>>({});
   const [commentBody, setCommentBody] = useState('');
 
+  // Edit state
+  const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
+  const [editWorkspaceName, setEditWorkspaceName] = useState('');
+  const [editingBoardTitle, setEditingBoardTitle] = useState(false);
+  const [editBoardForm, setEditBoardForm] = useState({ title: '', description: '' });
+  const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [editListTitle, setEditListTitle] = useState('');
+  const [editingCard, setEditingCard] = useState(false);
+  const [editCardForm, setEditCardForm] = useState({ title: '', description: '' });
+
   const { joinWorkspace, leaveWorkspace, joinBoard, leaveBoard, on, off, SOCKET_EVENTS } =
     useSocket({
       token: auth.tokens?.accessToken,
@@ -520,6 +530,123 @@ function App() {
     }
   };
 
+  const handleCardUpdate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedCardId) return;
+    setError(null);
+    try {
+      await api.patch(`/cards/${selectedCardId}`, {
+        title: editCardForm.title.trim() || undefined,
+        description: editCardForm.description.trim() || undefined,
+      });
+      setEditingCard(false);
+      await fetchSelectedCard(selectedCardId);
+      if (selectedBoardId) await fetchBoard(selectedBoardId);
+    } catch (e) {
+      setError(getErrorMessage(e, 'Card update failed'));
+    }
+  };
+
+  const handleCardDelete = async (cardId: string) => {
+    if (!window.confirm('Delete this card?')) return;
+    setError(null);
+    try {
+      await api.delete(`/cards/${cardId}`);
+      setSelectedCardId(null);
+      setSelectedCard(null);
+      if (selectedBoardId) await fetchBoard(selectedBoardId);
+    } catch (e) {
+      setError(getErrorMessage(e, 'Card delete failed'));
+    }
+  };
+
+  const handleListUpdate = async (listId: string) => {
+    if (!editListTitle.trim()) return;
+    setError(null);
+    try {
+      await api.patch(`/lists/${listId}`, { title: editListTitle.trim() });
+      setEditingListId(null);
+      if (selectedBoardId) await fetchBoard(selectedBoardId);
+    } catch (e) {
+      setError(getErrorMessage(e, 'List update failed'));
+    }
+  };
+
+  const handleListDelete = async (listId: string) => {
+    if (!window.confirm('Delete this list and all its cards?')) return;
+    setError(null);
+    try {
+      await api.delete(`/lists/${listId}`);
+      if (selectedBoardId) await fetchBoard(selectedBoardId);
+    } catch (e) {
+      setError(getErrorMessage(e, 'List delete failed'));
+    }
+  };
+
+  const handleBoardUpdate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedBoardId || !editBoardForm.title.trim()) return;
+    setError(null);
+    try {
+      await api.patch(`/boards/${selectedBoardId}`, {
+        title: editBoardForm.title.trim(),
+        description: editBoardForm.description.trim() || undefined,
+      });
+      setEditingBoardTitle(false);
+      if (selectedWorkspaceId) await fetchBoards(selectedWorkspaceId);
+      await fetchBoard(selectedBoardId);
+    } catch (e) {
+      setError(getErrorMessage(e, 'Board update failed'));
+    }
+  };
+
+  const handleBoardDelete = async () => {
+    if (!selectedBoardId || !window.confirm('Delete this board?')) return;
+    setError(null);
+    try {
+      await api.delete(`/boards/${selectedBoardId}`);
+      setSelectedBoardId(null);
+      setBoard(null);
+      setSelectedCardId(null);
+      setSelectedCard(null);
+      if (selectedWorkspaceId) await fetchBoards(selectedWorkspaceId);
+    } catch (e) {
+      setError(getErrorMessage(e, 'Board delete failed'));
+    }
+  };
+
+  const handleWorkspaceUpdate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingWorkspaceId || !editWorkspaceName.trim()) return;
+    setError(null);
+    try {
+      await api.patch(`/workspaces/${editingWorkspaceId}`, { name: editWorkspaceName.trim() });
+      setEditingWorkspaceId(null);
+      await bootstrap();
+    } catch (e) {
+      setError(getErrorMessage(e, 'Workspace update failed'));
+    }
+  };
+
+  const handleWorkspaceDelete = async (workspaceId: string) => {
+    if (!window.confirm('Delete this workspace and everything in it?')) return;
+    setError(null);
+    try {
+      await api.delete(`/workspaces/${workspaceId}`);
+      if (selectedWorkspaceId === workspaceId) {
+        setSelectedWorkspaceId(null);
+        setBoards([]);
+        setBoard(null);
+        setSelectedBoardId(null);
+        setSelectedCardId(null);
+        setSelectedCard(null);
+      }
+      await bootstrap();
+    } catch (e) {
+      setError(getErrorMessage(e, 'Workspace delete failed'));
+    }
+  };
+
   const nextListForCard = (listId: string) => {
     if (!board) {
       return null;
@@ -627,23 +754,50 @@ function App() {
             <h2>Workspaces</h2>
             <div className="tile-stack">
               {workspaces.map((workspace) => (
-                <button
-                  className={
-                    workspace.id === selectedWorkspaceId
-                      ? 'workspace-tile workspace-tile--active'
-                      : 'workspace-tile'
-                  }
-                  key={workspace.id}
-                  onClick={() => {
-                    setSelectedWorkspaceId(workspace.id);
-                    setSelectedCardId(null);
-                    setSelectedCard(null);
-                    void fetchBoards(workspace.id);
-                  }}
-                  type="button"
-                >
-                  {workspace.name}
-                </button>
+                <div className="tile-row" key={workspace.id}>
+                  {editingWorkspaceId === workspace.id ? (
+                    <form className="inline-form" onSubmit={handleWorkspaceUpdate}>
+                      <input
+                        autoFocus
+                        value={editWorkspaceName}
+                        onChange={(e) => setEditWorkspaceName(e.target.value)}
+                      />
+                      <button className="primary-button" type="submit">Save</button>
+                      <button className="ghost-button" type="button" onClick={() => setEditingWorkspaceId(null)}>Cancel</button>
+                    </form>
+                  ) : (
+                    <>
+                      <button
+                        className={
+                          workspace.id === selectedWorkspaceId
+                            ? 'workspace-tile workspace-tile--active'
+                            : 'workspace-tile'
+                        }
+                        onClick={() => {
+                          setSelectedWorkspaceId(workspace.id);
+                          setSelectedCardId(null);
+                          setSelectedCard(null);
+                          void fetchBoards(workspace.id);
+                        }}
+                        type="button"
+                      >
+                        {workspace.name}
+                      </button>
+                      <button
+                        className="ghost-button"
+                        type="button"
+                        title="Rename"
+                        onClick={() => { setEditingWorkspaceId(workspace.id); setEditWorkspaceName(workspace.name); }}
+                      >✏️</button>
+                      <button
+                        className="ghost-button"
+                        type="button"
+                        title="Delete"
+                        onClick={() => void handleWorkspaceDelete(workspace.id)}
+                      >🗑️</button>
+                    </>
+                  )}
+                </div>
               ))}
             </div>
             <form className="inline-form" onSubmit={handleWorkspaceCreate}>
@@ -719,11 +873,40 @@ function App() {
 
         <section className="board-section">
           <header className="board-header">
-            <div>
-              <h2>{board?.title ?? 'Select board'}</h2>
-              <p>{board?.description ?? 'Choose workspace, then board.'}</p>
+            {editingBoardTitle && board ? (
+              <form className="inline-form" onSubmit={handleBoardUpdate}>
+                <input
+                  autoFocus
+                  value={editBoardForm.title}
+                  onChange={(e) => setEditBoardForm((f) => ({ ...f, title: e.target.value }))}
+                  placeholder="Board title"
+                />
+                <input
+                  value={editBoardForm.description}
+                  onChange={(e) => setEditBoardForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Description"
+                />
+                <button className="primary-button" type="submit">Save</button>
+                <button className="ghost-button" type="button" onClick={() => setEditingBoardTitle(false)}>Cancel</button>
+              </form>
+            ) : (
+              <div>
+                <h2>{board?.title ?? 'Select board'}</h2>
+                <p>{board?.description ?? 'Choose workspace, then board.'}</p>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              {board && !editingBoardTitle && (
+                <>
+                  <button className="ghost-button" type="button" title="Edit board" onClick={() => {
+                    setEditBoardForm({ title: board.title, description: board.description ?? '' });
+                    setEditingBoardTitle(true);
+                  }}>✏️ Edit</button>
+                  <button className="ghost-button" type="button" title="Delete board" onClick={() => void handleBoardDelete()}>🗑️ Delete</button>
+                </>
+              )}
+              {isLoadingBoard ? <span className="app-subtitle">Syncing...</span> : null}
             </div>
-            {isLoadingBoard ? <span className="app-subtitle">Syncing board...</span> : null}
           </header>
 
           {board ? (
@@ -742,8 +925,24 @@ function App() {
                 {board.lists.map((list) => (
                   <article className="board-list" key={list.id}>
                     <div className="list-heading">
-                      <h3>{list.title}</h3>
-                      <span>{list.cards.length} cards</span>
+                      {editingListId === list.id ? (
+                        <form className="inline-form" onSubmit={(e) => { e.preventDefault(); void handleListUpdate(list.id); }}>
+                          <input
+                            autoFocus
+                            value={editListTitle}
+                            onChange={(e) => setEditListTitle(e.target.value)}
+                          />
+                          <button className="primary-button" type="submit">Save</button>
+                          <button className="ghost-button" type="button" onClick={() => setEditingListId(null)}>Cancel</button>
+                        </form>
+                      ) : (
+                        <>
+                          <h3>{list.title}</h3>
+                          <span>{list.cards.length} cards</span>
+                          <button className="ghost-button" type="button" title="Rename list" onClick={() => { setEditingListId(list.id); setEditListTitle(list.title); }}>✏️</button>
+                          <button className="ghost-button" type="button" title="Delete list" onClick={() => void handleListDelete(list.id)}>🗑️</button>
+                        </>
+                      )}
                     </div>
                     {list.cards.map((card) => {
                       const targetList = nextListForCard(list.id);
@@ -813,8 +1012,32 @@ function App() {
           {selectedCard ? (
             <>
               <div className="details-section">
-                <h3>{selectedCard.title}</h3>
-                <p>{selectedCard.description || 'No description'}</p>
+                {editingCard ? (
+                  <form className="inline-form" onSubmit={handleCardUpdate}>
+                    <input
+                      autoFocus
+                      value={editCardForm.title}
+                      onChange={(e) => setEditCardForm((f) => ({ ...f, title: e.target.value }))}
+                      placeholder="Card title"
+                    />
+                    <textarea
+                      value={editCardForm.description}
+                      onChange={(e) => setEditCardForm((f) => ({ ...f, description: e.target.value }))}
+                      placeholder="Description"
+                    />
+                    <button className="primary-button" type="submit">Save</button>
+                    <button className="ghost-button" type="button" onClick={() => setEditingCard(false)}>Cancel</button>
+                  </form>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
+                      <h3 style={{ flex: 1 }}>{selectedCard.title}</h3>
+                      <button className="ghost-button" type="button" onClick={() => { setEditCardForm({ title: selectedCard.title, description: selectedCard.description ?? '' }); setEditingCard(true); }}>✏️ Edit</button>
+                      <button className="ghost-button" type="button" onClick={() => void handleCardDelete(selectedCard.id)}>🗑️ Delete</button>
+                    </div>
+                    <p>{selectedCard.description || 'No description'}</p>
+                  </>
+                )}
                 <dl className="meta-grid">
                   <div>
                     <dt>Due</dt>
