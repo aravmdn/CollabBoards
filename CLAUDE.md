@@ -105,13 +105,12 @@ npm run smoke:local            # smoke test with embedded DB
 
 ## What's Not Done Yet
 
-From `CHECKLIST.md` — open items:
-- Member management endpoints and UI
-- Drag-and-drop card movement
-- Rich-text card editor
-- Attachment upload UI
+See **`TODO.md`** for the full prioritised task list. Check off each item there as it is completed.
 
-Don't implement these unless Arav explicitly asks.
+Summary of open areas:
+- Frontend UX gaps: logout button, card metadata/activity UI, edit/delete actions for cards, lists, boards, workspaces, member management UI
+- Backend: pagination on workspace and board list endpoints
+- Deferred (do not implement unless Arav explicitly asks): drag-and-drop, rich-text editor, attachment upload
 
 ## Data Model Quick Reference
 
