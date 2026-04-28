@@ -16,7 +16,7 @@ Check off each item as it is completed. When all items in a section are done, th
 - [x] **Edit board title/description** — rename from the board view (PATCH `/api/boards/:id`)
 - [x] **Delete board** — delete action from the board view (DELETE `/api/boards/:id`)
 - [x] **Edit/delete workspace** — rename and delete workspace from the sidebar (PATCH/DELETE `/api/workspaces/:id`)
-- [ ] **Workspace member management UI** — invite members, change roles, remove members; all backend endpoints already exist under `/api/workspaces/:workspaceId/members`
+- [x] **Workspace member management UI** — invite members, change roles, remove members; all backend endpoints already exist under `/api/workspaces/:workspaceId/members`
 
 ---
 
