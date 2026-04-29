@@ -12,6 +12,7 @@
     "dev:frontend": "npm run dev --workspace frontend",
     "smoke": "node scripts/production-smoke.mjs",
     "smoke:local": "node scripts/local-smoke-runner.mjs",
+    "smoke:local:win": "node scripts/local-smoke-runner-win.mjs",
     "test": "npm test --workspaces",
     "lint": "npm run lint --workspaces"
   },
