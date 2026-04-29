@@ -112,9 +112,15 @@ const stopAll = async () => {
   while (children.length > 0) {
     const child = children.pop();
     if (!child?.pid) continue;
-    // taskkill is a built-in; needs shell on Windows
-    await runCommand('taskkill', ['/pid', `${child.pid}`, '/t', '/f'], process.env, 'taskkill', { shell: true }).catch(() => {});
+    try { process.kill(child.pid, 'SIGTERM'); } catch { /* already gone */ }
+    // Also kill the whole process tree via taskkill in case npm spawned children
+    await new Promise((resolve) => {
+      const t = spawn('taskkill', ['/pid', `${child.pid}`, '/t', '/f'], { shell: true, stdio: 'ignore' });
+      t.once('exit', resolve);
+      t.once('error', resolve);
+    });
   }
+  await sleep(1000);
 };
 
 // pg tools have spaces in the path on Windows — spawn without shell and pass
@@ -125,7 +131,7 @@ const createDb = () =>
   runCommand(pgTool('createdb'), [dbName], pgEnv(), `createdb ${dbName}`);
 
 const dropDb = () =>
-  runCommand(pgTool('dropdb'), ['--if-exists', dbName], pgEnv(), `dropdb ${dbName}`);
+  runCommand(pgTool('dropdb'), ['--if-exists', '--force', dbName], pgEnv(), `dropdb ${dbName}`);
 
 // ── main ───────────────────────────────────────────────────────────────────
 
