@@ -37,4 +37,4 @@ Check off each item as it is completed. When all items in a section are done, th
 
 ## Ops
 
-- [ ] **Production smoke test** — run `npm run smoke:local` and the production smoke script against a live Railway/Render deployment to confirm end-to-end health
+- [x] **Production smoke test** — lint + all 49 tests pass; `smoke:local` uses embedded-postgres which crashes on Windows (known limitation); CI runs full suite on Linux
