@@ -62,6 +62,8 @@ vi.mock('./hooks/useSocket', () => ({
       CARD_DELETED: 'card:deleted',
       COMMENT_ADDED: 'comment:added',
       COMMENT_DELETED: 'comment:deleted',
+      ATTACHMENT_ADDED: 'attachment:added',
+      ATTACHMENT_DELETED: 'attachment:deleted',
     },
   }),
 }));

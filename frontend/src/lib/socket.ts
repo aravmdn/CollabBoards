@@ -57,5 +57,9 @@ export const SOCKET_EVENTS = {
   // Comment events
   COMMENT_ADDED: 'comment:added',
   COMMENT_DELETED: 'comment:deleted',
+
+  // Attachment events
+  ATTACHMENT_ADDED: 'attachment:added',
+  ATTACHMENT_DELETED: 'attachment:deleted',
 } as const;
 

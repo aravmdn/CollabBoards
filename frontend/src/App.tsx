@@ -5,6 +5,13 @@ import { useSocket } from './hooks/useSocket';
 import { disconnectSocket } from './lib/socket';
 import { api } from './lib/api';
 import { WorkspaceMembers } from './components/WorkspaceMembers';
+import {
+  BoardView,
+  type BoardCardSummary,
+  type BoardListSummary,
+} from './components/BoardView';
+import { RichTextEditor, RichTextView } from './components/RichTextEditor';
+import { CardAttachments } from './components/CardAttachments';
 
 interface UserSummary {
   id: string;
@@ -23,24 +30,9 @@ interface BoardListItem {
   description?: string | null;
 }
 
-interface CardSummary {
-  id: string;
-  title: string;
-  description?: string | null;
+interface CardSummary extends BoardCardSummary {
   dueDate?: string | null;
-  labels?: string[];
   assignee?: UserSummary | null;
-  _count?: {
-    comments: number;
-    attachments: number;
-  };
-}
-
-interface BoardList {
-  id: string;
-  title: string;
-  position: number;
-  cards: CardSummary[];
 }
 
 interface BoardDetails {
@@ -49,7 +41,7 @@ interface BoardDetails {
   description?: string | null;
   workspaceId: string;
   workspace?: Workspace;
-  lists: BoardList[];
+  lists: (BoardListSummary & { cards: CardSummary[] })[];
 }
 
 interface CommentRecord {
@@ -138,8 +130,8 @@ function App() {
   const [listTitle, setListTitle] = useState('');
   const [cardDrafts, setCardDrafts] = useState<Record<string, string>>({});
   const [commentBody, setCommentBody] = useState('');
+  const [attachmentRefreshKey, setAttachmentRefreshKey] = useState(0);
 
-  // Edit state
   const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
   const [editWorkspaceName, setEditWorkspaceName] = useState('');
   const [editingBoardTitle, setEditingBoardTitle] = useState(false);
@@ -319,6 +311,11 @@ function App() {
       void fetchBoard(selectedBoardId);
     };
 
+    const refreshAttachments = () => {
+      setAttachmentRefreshKey((value) => value + 1);
+      void fetchBoard(selectedBoardId);
+    };
+
     const boardEvents = [
       SOCKET_EVENTS.BOARD_CREATED,
       SOCKET_EVENTS.BOARD_UPDATED,
@@ -338,6 +335,8 @@ function App() {
 
     on(SOCKET_EVENTS.COMMENT_ADDED, refreshComments);
     on(SOCKET_EVENTS.COMMENT_DELETED, refreshComments);
+    on(SOCKET_EVENTS.ATTACHMENT_ADDED, refreshAttachments);
+    on(SOCKET_EVENTS.ATTACHMENT_DELETED, refreshAttachments);
 
     return () => {
       for (const event of boardEvents) {
@@ -345,6 +344,8 @@ function App() {
       }
       off(SOCKET_EVENTS.COMMENT_ADDED, refreshComments);
       off(SOCKET_EVENTS.COMMENT_DELETED, refreshComments);
+      off(SOCKET_EVENTS.ATTACHMENT_ADDED, refreshAttachments);
+      off(SOCKET_EVENTS.ATTACHMENT_DELETED, refreshAttachments);
     };
   }, [
     auth.isAuthenticated,
@@ -356,6 +357,8 @@ function App() {
     selectedBoardId,
     selectedCardId,
     selectedWorkspaceId,
+    SOCKET_EVENTS.ATTACHMENT_ADDED,
+    SOCKET_EVENTS.ATTACHMENT_DELETED,
     SOCKET_EVENTS.BOARD_CREATED,
     SOCKET_EVENTS.BOARD_DELETED,
     SOCKET_EVENTS.BOARD_UPDATED,
@@ -486,18 +489,46 @@ function App() {
     }
   };
 
-  const handleCardMove = async (cardId: string, targetListId: string) => {
-    setError(null);
+  const handleCardDraftChange = (listId: string, value: string) => {
+    setCardDrafts((current) => ({ ...current, [listId]: value }));
+  };
 
+  const handleCardMove = async (
+    cardId: string,
+    targetListId: string,
+    position: number,
+  ) => {
+    if (!board) return;
+    const previous = board;
+    const reordered: BoardDetails = {
+      ...board,
+      lists: board.lists.map((list) => ({ ...list, cards: [...list.cards] })),
+    };
+
+    let movedCard: CardSummary | null = null;
+    for (const list of reordered.lists) {
+      const idx = list.cards.findIndex((card) => card.id === cardId);
+      if (idx >= 0) {
+        [movedCard] = list.cards.splice(idx, 1);
+        break;
+      }
+    }
+    if (!movedCard) return;
+
+    const targetList = reordered.lists.find((list) => list.id === targetListId);
+    if (!targetList) return;
+    const clamped = Math.max(0, Math.min(position, targetList.cards.length));
+    targetList.cards.splice(clamped, 0, movedCard);
+    setBoard(reordered);
+
+    setError(null);
     try {
       await api.patch(`/cards/${cardId}`, {
         listId: targetListId,
+        position: clamped,
       });
-
-      if (selectedBoardId) {
-        await fetchBoard(selectedBoardId);
-      }
     } catch (moveError) {
+      setBoard(previous);
       setError(getErrorMessage(moveError, 'Card move failed'));
     }
   };
@@ -537,7 +568,7 @@ function App() {
     try {
       await api.patch(`/cards/${selectedCardId}`, {
         title: editCardForm.title.trim() || undefined,
-        description: editCardForm.description.trim() || undefined,
+        description: editCardForm.description,
       });
       setEditingCard(false);
       await fetchSelectedCard(selectedCardId);
@@ -647,28 +678,14 @@ function App() {
     }
   };
 
-  const nextListForCard = (listId: string) => {
-    if (!board) {
-      return null;
-    }
-
-    const listIndex = board.lists.findIndex((list) => list.id === listId);
-    if (listIndex < 0 || listIndex === board.lists.length - 1) {
-      return null;
-    }
-
-    return board.lists[listIndex + 1];
-  };
-
   if (!auth.isAuthenticated) {
     return (
       <div className="auth-shell">
         <section className="auth-card">
-          <p className="eyebrow">Repo recovery build</p>
+          <p className="eyebrow">Trello-style boards</p>
           <h1>CollabBoards</h1>
           <p className="auth-copy">
-            Login or register. Then app loads real workspaces, boards, lists,
-            cards, comments.
+            Login or register to manage workspaces, boards, lists, and cards in real time.
           </p>
           <div className="auth-toggle">
             <button
@@ -730,7 +747,7 @@ function App() {
           <p className="eyebrow">Live workspace</p>
           <h1>CollabBoards</h1>
           <span className="app-subtitle">
-            Core flow only. Real API. Real socket refresh.
+            Drag cards, edit inline, upload files — synced in real time.
           </span>
         </div>
         <div className="header-actions">
@@ -921,82 +938,26 @@ function App() {
                   Add list
                 </button>
               </form>
-              <div className="board-lists">
-                {board.lists.map((list) => (
-                  <article className="board-list" key={list.id}>
-                    <div className="list-heading">
-                      {editingListId === list.id ? (
-                        <form className="inline-form" onSubmit={(e) => { e.preventDefault(); void handleListUpdate(list.id); }}>
-                          <input
-                            autoFocus
-                            value={editListTitle}
-                            onChange={(e) => setEditListTitle(e.target.value)}
-                          />
-                          <button className="primary-button" type="submit">Save</button>
-                          <button className="ghost-button" type="button" onClick={() => setEditingListId(null)}>Cancel</button>
-                        </form>
-                      ) : (
-                        <>
-                          <h3>{list.title}</h3>
-                          <span>{list.cards.length} cards</span>
-                          <button className="ghost-button" type="button" title="Rename list" onClick={() => { setEditingListId(list.id); setEditListTitle(list.title); }}>✏️</button>
-                          <button className="ghost-button" type="button" title="Delete list" onClick={() => void handleListDelete(list.id)}>🗑️</button>
-                        </>
-                      )}
-                    </div>
-                    {list.cards.map((card) => {
-                      const targetList = nextListForCard(list.id);
-
-                      return (
-                        <div className="card card--interactive" key={card.id}>
-                          <button
-                            className="card-hitbox"
-                            onClick={() => void handleCardSelect(card.id)}
-                            type="button"
-                          >
-                            <strong>{card.title}</strong>
-                            <span>{card.description || 'No description'}</span>
-                            <small>
-                              {card.labels?.length ? card.labels.join(', ') : 'No labels'}
-                            </small>
-                          </button>
-                          <div className="card-meta">
-                            <span>{card._count?.comments ?? 0} comments</span>
-                            {targetList ? (
-                              <button
-                                className="ghost-button"
-                                onClick={() => void handleCardMove(card.id, targetList.id)}
-                                type="button"
-                              >
-                                Move to {targetList.title}
-                              </button>
-                            ) : null}
-                          </div>
-                        </div>
-                      );
-                    })}
-                    <div className="card-compose">
-                      <input
-                        onChange={(event) =>
-                          setCardDrafts((current) => ({
-                            ...current,
-                            [list.id]: event.target.value,
-                          }))
-                        }
-                        placeholder="New card title"
-                        value={cardDrafts[list.id] ?? ''}
-                      />
-                      <button
-                        className="ghost-button"
-                        onClick={() => void handleCardCreate(list.id)}
-                        type="button"
-                      >
-                        Add card
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
+              <BoardView
+                lists={board.lists}
+                editingListId={editingListId}
+                editListTitle={editListTitle}
+                cardDrafts={cardDrafts}
+                onSelectCard={(cardId) => void handleCardSelect(cardId)}
+                onCardCreate={(listId) => void handleCardCreate(listId)}
+                onCardDraftChange={handleCardDraftChange}
+                onStartEditList={(listId, title) => {
+                  setEditingListId(listId);
+                  setEditListTitle(title);
+                }}
+                onCancelEditList={() => setEditingListId(null)}
+                onEditListTitleChange={setEditListTitle}
+                onSaveEditList={(listId) => void handleListUpdate(listId)}
+                onDeleteList={(listId) => void handleListDelete(listId)}
+                onMoveCard={(cardId, targetListId, position) =>
+                  void handleCardMove(cardId, targetListId, position)
+                }
+              />
             </>
           ) : (
             <div className="empty-state">
@@ -1020,9 +981,11 @@ function App() {
                       onChange={(e) => setEditCardForm((f) => ({ ...f, title: e.target.value }))}
                       placeholder="Card title"
                     />
-                    <textarea
+                    <RichTextEditor
                       value={editCardForm.description}
-                      onChange={(e) => setEditCardForm((f) => ({ ...f, description: e.target.value }))}
+                      onChange={(html) =>
+                        setEditCardForm((f) => ({ ...f, description: html }))
+                      }
                       placeholder="Description"
                     />
                     <button className="primary-button" type="submit">Save</button>
@@ -1035,7 +998,7 @@ function App() {
                       <button className="ghost-button" type="button" onClick={() => { setEditCardForm({ title: selectedCard.title, description: selectedCard.description ?? '' }); setEditingCard(true); }}>✏️ Edit</button>
                       <button className="ghost-button" type="button" onClick={() => void handleCardDelete(selectedCard.id)}>🗑️ Delete</button>
                     </div>
-                    <p>{selectedCard.description || 'No description'}</p>
+                    <RichTextView html={selectedCard.description} />
                   </>
                 )}
                 <dl className="meta-grid">
@@ -1052,6 +1015,17 @@ function App() {
                     <dd>{selectedCard.labels?.length ? selectedCard.labels.join(', ') : 'None'}</dd>
                   </div>
                 </dl>
+              </div>
+
+              <div className="details-section">
+                <h3>Attachments</h3>
+                <CardAttachments
+                  cardId={selectedCard.id}
+                  refreshKey={attachmentRefreshKey}
+                  onMutation={() => {
+                    if (selectedBoardId) void fetchBoard(selectedBoardId);
+                  }}
+                />
               </div>
 
               <div className="details-section">
@@ -1091,8 +1065,7 @@ function App() {
             </>
           ) : (
             <p>
-              Pick card. Comments and activity load from live API. Board socket
-              refresh updates this panel too.
+              Pick a card to see its description, attachments, comments, and activity.
             </p>
           )}
         </aside>

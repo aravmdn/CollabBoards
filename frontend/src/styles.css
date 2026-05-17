@@ -402,3 +402,219 @@ textarea {
   border: 1px solid #334155;
   border-radius: 4px;
 }
+
+.tile-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
+.tile-row .workspace-tile {
+  flex: 1;
+}
+
+.tile-row .ghost-button {
+  width: auto;
+  padding: 0.4rem 0.55rem;
+  border-style: solid;
+}
+
+.board-list-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-height: 1.6rem;
+}
+
+.board-list--drop {
+  outline: 2px dashed rgba(96, 165, 250, 0.65);
+  outline-offset: 4px;
+}
+
+.card--draggable {
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+
+.card--draggable:active {
+  cursor: grabbing;
+}
+
+.card--dragging {
+  padding: 0.75rem;
+  box-shadow: 0 18px 38px rgba(2, 6, 23, 0.55);
+  transform: rotate(-1.5deg);
+}
+
+.rich-editor {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 0.9rem;
+  background: rgba(15, 23, 42, 0.65);
+  overflow: hidden;
+}
+
+.rich-editor__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.35rem 0.45rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(8, 15, 27, 0.4);
+}
+
+.rich-editor__btn {
+  min-width: 1.9rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 0.45rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #cbd5e1;
+}
+
+.rich-editor__btn:hover {
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.rich-editor__btn--active {
+  background: rgba(96, 165, 250, 0.25);
+  color: #eff6ff;
+}
+
+.rich-editor__content {
+  min-height: 6rem;
+  padding: 0.7rem 0.9rem;
+  outline: none;
+  color: #eff6ff;
+}
+
+.rich-editor__content p {
+  margin: 0 0 0.4rem;
+}
+
+.rich-editor__content h1,
+.rich-editor__content h2,
+.rich-editor__content h3 {
+  margin: 0.6rem 0 0.4rem;
+}
+
+.rich-editor__content ul,
+.rich-editor__content ol {
+  margin: 0 0 0.6rem 1.2rem;
+  padding: 0;
+}
+
+.rich-editor__content blockquote {
+  border-left: 3px solid rgba(96, 165, 250, 0.6);
+  margin: 0.4rem 0;
+  padding: 0.1rem 0.7rem;
+  color: #cbd5e1;
+}
+
+.rich-editor__content pre {
+  padding: 0.6rem 0.8rem;
+  background: rgba(2, 6, 23, 0.55);
+  border-radius: 0.6rem;
+  overflow-x: auto;
+}
+
+.rich-view {
+  margin: 0.4rem 0 0;
+  color: #cbd5e1;
+}
+
+.rich-view p,
+.rich-view ul,
+.rich-view ol {
+  margin: 0 0 0.5rem;
+}
+
+.rich-view ul,
+.rich-view ol {
+  padding-left: 1.2rem;
+}
+
+.rich-view blockquote {
+  border-left: 3px solid rgba(96, 165, 250, 0.6);
+  margin: 0.4rem 0;
+  padding: 0.1rem 0.7rem;
+}
+
+.rich-view pre {
+  padding: 0.6rem 0.8rem;
+  background: rgba(2, 6, 23, 0.55);
+  border-radius: 0.6rem;
+  overflow-x: auto;
+}
+
+.rich-view--empty {
+  font-style: italic;
+  color: #93c5fd;
+}
+
+.attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.attachments__upload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.attachments__upload input[type='file'] {
+  padding: 0.45rem 0.55rem;
+  font-size: 0.85rem;
+}
+
+.attachments__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.attachment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 0.85rem;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.attachment-row__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.attachment-row__name {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  color: #93c5fd;
+  text-decoration: underline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-row__info small {
+  color: #94a3b8;
+  font-size: 0.72rem;
+}
+
+.attachment-row .ghost-button {
+  width: auto;
+  padding: 0.4rem 0.6rem;
+}
