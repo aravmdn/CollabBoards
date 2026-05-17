@@ -1,25 +1,21 @@
 ## CollabBoards - Requirements
 
-### Current Recovery Scope
+### Scope
 
-Recovered and expected now:
+Shipped:
 
-- auth with email/password
-- workspace list and create
-- board list, create, open
-- list create
-- card create, inspect, simple move
+- email/password authentication
+- workspace list, create, rename, delete
+- board list, create, open, rename, delete
+- list create, rename, delete
+- card create, edit, delete, move (drag-and-drop and across-list)
+- rich-text card descriptions (TipTap; sanitized on render)
+- card metadata: `assigneeId`, `labels`, `dueDate`
 - comments view and create
-- board refresh through Socket.IO events
-- card metadata fields in backend contract: assignee, labels, due date
-
-Explicitly deferred after this recovery pass:
-
-- rich-text card editor UI
-- attachment upload and management
-- workspace member management UI
-- drag-and-drop movement
-- production deployment validation
+- per-card file attachments (upload, download, delete)
+- per-card activity feed
+- workspace member management UI (invite, change role, remove)
+- real-time refresh through Socket.IO events
 
 ### 1. Functional Requirements
 
@@ -31,30 +27,30 @@ Explicitly deferred after this recovery pass:
 1.2 Cards and Content
 - each card SHALL have title, description, and metadata (`assigneeId`, `labels`, `dueDate`)
 - each card SHALL support comments with author, timestamp, and text
-- system SHOULD support activity log per card
-- system SHOULD support file attachments per card
-- recovery UI only SHALL display simple description text, not rich-text editor
+- each card SHALL support an activity log
+- each card SHALL support file attachments (upload, download, delete)
+- card descriptions SHALL accept rich text (HTML) and SHALL be sanitized before rendering
 
 1.3 Users and Roles
 - users SHALL authenticate with email and password
 - users SHALL belong to one or more workspaces
-- users SHALL have role within each workspace: OWNER, ADMIN, MEMBER
+- users SHALL have a role within each workspace: OWNER, ADMIN, MEMBER
 - permissions SHALL be enforced per workspace
 
 1.4 Permissions
-- OWNERs SHALL manage workspace settings
+- OWNERs SHALL manage workspace settings and members
 - ADMINs SHALL manage boards and lists
-- MEMBERs SHALL create and edit cards, and comment
+- MEMBERs SHALL create and edit cards, comment, and upload attachments
 - system SHALL prevent access to workspaces and boards outside membership
 
 1.5 Real-Time Collaboration
-- system SHALL update connected clients when card is created, updated, moved
-- system SHALL update connected clients when comment is added or deleted
+- system SHALL update connected clients when a card is created, updated, moved, or deleted
+- system SHALL update connected clients when a comment is added or deleted
+- system SHALL update connected clients when an attachment is added or deleted
 - system SHALL group connections into `workspace:{id}` and `board:{id}` rooms
-- recovery frontend MAY refetch board state instead of applying granular optimistic patches
 
 1.6 API
-- backend SHALL expose REST API for workspaces, boards, lists, cards, comments
+- backend SHALL expose REST API for workspaces, boards, lists, cards, comments, attachments
 - API SHALL support pagination for workspaces and boards
 - API SHALL validate inputs and return standardized error responses
 
@@ -64,19 +60,21 @@ Explicitly deferred after this recovery pass:
 - passwords SHALL be hashed
 - JWT secrets SHALL live in env vars
 - workspace and board access SHALL be scoped by authenticated membership
+- uploaded files SHALL be served only via authenticated download endpoint, never directly
 
 2.2 Reliability
-- critical domain logic SHOULD stay covered by automated tests
+- critical domain logic SHALL be covered by automated tests
 - route mount regressions SHALL have automated coverage
+- destructive parent deletes (workspace/board/list/card) SHALL cascade cleanly to children
 
 2.3 Usability
-- UI SHOULD feel responsive and real-time for recovered core flow
-- drag-and-drop SHOULD be considered backlog, not shipped claim
+- UI SHALL feel responsive and real-time
+- drag-and-drop card movement SHALL be supported
 
 2.4 Deployability
 - frontend SHALL build with `npm run build --workspace frontend`
 - backend SHALL build with `npm run build --workspace backend`
-- CI SHOULD enforce lint, tests, and both builds
+- CI SHALL enforce lint, tests, and both builds
 
 ### 3. Technical Constraints
 

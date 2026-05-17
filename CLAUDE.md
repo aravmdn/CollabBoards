@@ -10,10 +10,10 @@ CollabBoards is a Trello-style collaboration platform. Users belong to workspace
 
 | Layer | Stack |
 |---|---|
-| Backend | Node.js 20, Express 4, TypeScript, Prisma 5, PostgreSQL |
+| Backend | Node.js 20, Express 4, TypeScript, Prisma 5, PostgreSQL, multer |
 | Auth | JWT — 15m access token + 7d refresh token, bcryptjs hashing |
 | Real-time | Socket.IO 4 (server + client) |
-| Frontend | React 18, Vite 5, TypeScript, Axios |
+| Frontend | React 18, Vite 5, TypeScript, Axios, @dnd-kit, TipTap, DOMPurify |
 | Testing | Backend: Jest + ts-jest · Frontend: Vitest + RTL |
 | CI | GitHub Actions (install → lint → test → build both) |
 | Deploy | Railway via Nixpacks; `start:railway` applies migrations then starts server |
@@ -32,7 +32,8 @@ CollabBoards/
 │   ├── schema.prisma   # Single source of truth for the data model
 │   └── migrations/     # Committed; never edit manually
 ├── frontend/src/
-│   ├── App.tsx         # All UI flows (large file; refactor carefully)
+│   ├── App.tsx         # Top-level shell, layout, socket wiring
+│   ├── components/     # BoardView (DnD), RichTextEditor, CardAttachments, WorkspaceMembers
 │   ├── lib/api.ts      # Axios instance + refresh-token interceptor
 │   ├── lib/socket.ts   # Socket.IO singleton
 │   └── hooks/          # useAuth.ts, useSocket.ts
@@ -40,7 +41,7 @@ CollabBoards/
 ├── .github/workflows/ci.yml
 ├── AGENTS.md           # Global dev rules (read this too)
 ├── CHECKLIST.md        # Implementation status ledger — keep updated
-├── REQUIREMENTS.md     # Product scope + deferred items
+├── REQUIREMENTS.md     # Product scope
 └── README.md           # User-facing API contract
 ```
 
@@ -64,7 +65,6 @@ CollabBoards/
 - `README.md` is the user-facing API contract. If code diverges from it, fix code or update docs deliberately — never silently.
 - Update `CHECKLIST.md` when an item's status changes.
 - Run `npm run lint` and `npm test` before calling any code task done.
-- Do not introduce drag-and-drop, rich-text editing, or attachment upload UI — these are explicitly deferred per `REQUIREMENTS.md`.
 
 ## Environment Variables
 
@@ -75,6 +75,13 @@ DATABASE_URL=postgresql://...
 JWT_ACCESS_TOKEN_SECRET=...
 JWT_REFRESH_TOKEN_SECRET=...
 FRONTEND_URL=http://localhost:5173
+```
+
+Optional backend env:
+
+```
+UPLOAD_DIR=./uploads             # where attachment files live
+MAX_UPLOAD_BYTES=10485760        # 10 MB per file
 ```
 
 **Frontend** (`frontend/.env`, see `frontend.env.example`)
@@ -103,20 +110,15 @@ npm run build --workspace frontend
 npm run smoke:local            # smoke test with embedded DB
 ```
 
-## What's Not Done Yet
+## Status
 
-See **`TODO.md`** for the full prioritised task list. Check off each item there as it is completed.
-
-Summary of open areas:
-- Frontend UX gaps: logout button, card metadata/activity UI, edit/delete actions for cards, lists, boards, workspaces, member management UI
-- Backend: pagination on workspace and board list endpoints
-- Deferred (do not implement unless Arav explicitly asks): drag-and-drop, rich-text editor, attachment upload
+Everything in **`TODO.md`** and **`CHECKLIST.md`** is shipped — including drag-and-drop card movement, rich-text descriptions, and per-card attachments. Keep both files current as new work arrives.
 
 ## Data Model Quick Reference
 
 `User` → `WorkspaceMember` (role: OWNER | ADMIN | MEMBER) → `Workspace` → `Board` → `List` → `Card` → `Comment`
 
-Cards also have: `assigneeId`, `labels` (string[]), `dueDate`.
+Cards also have: `assigneeId`, `labels` (string[]), `dueDate`, `description` (HTML, sanitized on render), and `Attachment[]`.
 
 ## RBAC Summary
 
@@ -130,6 +132,6 @@ Enforced in `middleware/rbac.ts` via `requireWorkspaceRole`, `requireBoardRole`,
 
 Rooms: `workspace:{id}`, `board:{id}`
 
-Backend emits: `board:created/updated/deleted`, `list:created/updated/deleted`, `card:created/updated/moved/deleted`, `comment:added/deleted`
+Backend emits: `board:created/updated/deleted`, `list:created/updated/deleted`, `card:created/updated/moved/deleted`, `comment:added/deleted`, `attachment:added/deleted`
 
 Frontend joins rooms on navigation and refetches on any event.

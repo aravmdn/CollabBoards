@@ -1,37 +1,32 @@
 ## CollabBoards
 
-CollabBoards is a recovery-stage collaboration app. Current shipped flow covers:
+CollabBoards is a Trello-style collaboration app with workspaces, boards, lists, cards, comments, and file attachments. Updates broadcast in real time over Socket.IO.
 
-- email/password auth with JWT access + refresh tokens
-- workspace list and board list
-- board view with real lists and cards
+Shipped:
+
+- email/password auth (JWT access + refresh tokens)
+- workspaces with role-based members (OWNER / ADMIN / MEMBER)
+- boards, lists, cards with inline edit + delete
+- card metadata: assignee, labels, due date
+- rich-text card descriptions (TipTap, sanitized on render)
+- drag-and-drop card movement within and across lists
+- file attachments per card (upload, download, delete)
 - card comments and activity feed
-- board refresh through Socket.IO events
-
-Current non-goals for this recovery pass:
-
-- rich-text card editor UI
-- attachment upload UI
-- drag-and-drop card movement
-- automated deploy execution
-
-Current deployment behavior:
-
-- Railway backend start applies committed Prisma migrations before launching the API server.
+- live updates over Socket.IO
 
 ### Stack
 
-- Backend: Node.js, Express, TypeScript, Prisma, PostgreSQL, Socket.IO
-- Frontend: React, TypeScript, Vite, Axios, Socket.IO client
+- Backend: Node.js, Express, TypeScript, Prisma, PostgreSQL, Socket.IO, multer
+- Frontend: React, TypeScript, Vite, Axios, Socket.IO client, @dnd-kit, TipTap, DOMPurify
 - CI: install, lint, tests, backend build, frontend build
 
 ### Repo Layout
 
-- `backend/`: API, Prisma schema, seed, route tests, service tests
-- `frontend/`: SPA for auth, workspace, board, card comments
+- `backend/`: API, Prisma schema, seed, route + service + integration tests
+- `frontend/`: SPA — auth, workspaces, boards, DnD card moves, rich-text editor, attachments
 - `.github/workflows/ci.yml`: repository CI gates
 - `CHECKLIST.md`: implementation ledger
-- `REQUIREMENTS.md`: product requirements plus deferred items
+- `REQUIREMENTS.md`: product requirements
 
 ### Local Setup
 
@@ -87,6 +82,20 @@ Defaults:
 - frontend: `http://localhost:5173`
 - frontend backend origin override: `VITE_BACKEND_URL=http://localhost:4000`
 
+### Backend Environment
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `PORT` | HTTP port | `4000` |
+| `DATABASE_URL` | PostgreSQL connection string | required |
+| `JWT_ACCESS_TOKEN_SECRET` | Access token signing secret | required |
+| `JWT_REFRESH_TOKEN_SECRET` | Refresh token signing secret | required |
+| `FRONTEND_URL` | CORS allowlist (optional) | `http://localhost:5173` |
+| `UPLOAD_DIR` | Where attachments are stored on disk | `backend/uploads/` |
+| `MAX_UPLOAD_BYTES` | Per-file upload limit | `10485760` (10 MB) |
+
+On Railway, mount a volume at `UPLOAD_DIR` to persist attachments across deploys.
+
 ### API Contract
 
 All routes live under `/api`.
@@ -141,11 +150,20 @@ Members:
 - `PATCH /api/workspaces/:workspaceId/members/:memberId`
 - `DELETE /api/workspaces/:workspaceId/members/:memberId`
 
-Card metadata now supported in backend and frontend display:
+Attachments:
+
+- `GET /api/cards/:cardId/attachments`
+- `POST /api/cards/:cardId/attachments` (multipart, field name `file`)
+- `GET /api/attachments/:id/download`
+- `DELETE /api/attachments/:id`
+
+Card metadata in the contract:
 
 - `assigneeId`
 - `labels`
 - `dueDate`
+- `description` (HTML; sanitized at render time)
+- `position` (used for ordering; PATCH with `listId + position` reorders the target list)
 
 ### Real-Time Contract
 
@@ -175,8 +193,10 @@ Server events:
 - `card:deleted`
 - `comment:added`
 - `comment:deleted`
+- `attachment:added`
+- `attachment:deleted`
 
-Frontend currently reacts by refetching workspace board data and selected card data.
+Frontend joins relevant rooms on navigation and refetches board/card state on any event.
 
 ### Verification
 
@@ -190,7 +210,7 @@ npm run build --workspace backend
 npm run build --workspace frontend
 ```
 
-`npm test --workspace backend` now includes a DB-backed integration suite for the auth, workspace, board, card, and comment flow by booting an embedded PostgreSQL instance and applying the committed Prisma migrations.
+`npm test --workspace backend` includes a DB-backed integration suite that boots an embedded PostgreSQL instance, applies the committed Prisma migrations, and exercises the auth, workspace, board, list, card, comment, reorder, and cascade-delete flow end-to-end. Embedded PostgreSQL does not run on Windows; on Windows the integration suite is skipped and full coverage runs in CI on Linux.
 
 Manual smoke with configured DB:
 
@@ -201,7 +221,6 @@ Manual smoke with configured DB:
 - list create
 - card create/move
 - comment create/list
-- frontend login, workspace select, board open, comment post
 
 Automated production-style smoke:
 
@@ -231,10 +250,3 @@ npm run smoke:local
 Deployment note:
 
 - Railway uses `npm run start:railway --workspace backend`, which runs `prisma migrate deploy` before `node dist/index.js`.
-
-### Known Gaps
-
-- No attachment upload route or UI recovery.
-- No rich-text editor recovery.
-- Card move UI is simple button-based step, not drag-and-drop.
-- No deployment job runs the smoke command automatically yet.

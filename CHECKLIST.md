@@ -8,10 +8,11 @@
 ### 2. Data and Multi-Tenancy
 - [x] Prisma chosen and wired to PostgreSQL.
 - [x] Users, workspaces, memberships, boards, lists, cards, comments, attachments, activity logs modeled.
-- [x] Card metadata recovered in schema: assignee, labels, due date.
+- [x] Card metadata in schema: assignee, labels, due date.
 - [x] Seed script exists and matches current schema.
 - [x] Prisma migrations committed.
-- [x] Full tenant-leak audit complete across every query path.
+- [x] Parent → child cascade deletes enforced at the database layer.
+- [x] Attachment metadata columns: `mimeType`, `size`, `uploadedById`.
 
 ### 3. Auth and RBAC
 - [x] `/api/auth/register`
@@ -33,6 +34,8 @@
 - [x] `/api/cards/:id` routes mounted and tested
 - [x] `/api/cards/:cardId/comments` routes mounted and tested
 - [x] `/api/comments/:id` route mounted and tested
+- [x] `/api/cards/:cardId/attachments` routes mounted and tested
+- [x] `/api/attachments/:id` (download + delete) routes mounted and tested
 
 ### 5. Validation and Errors
 - [x] Zod request validation on core write paths
@@ -43,6 +46,7 @@
 - [x] socket auth
 - [x] workspace and board rooms
 - [x] list/card/comment broadcasts on core mutations
+- [x] attachment broadcasts on upload/delete
 - [x] frontend board refresh on socket events
 - [x] dedicated socket smoke test
 
@@ -57,10 +61,9 @@
 - [x] create list
 - [x] create card
 - [x] comment view and create
-- [x] simple card move action
-- [ ] drag-and-drop card movement
-- [ ] rich-text card editor
-- [ ] attachment UI
+- [x] drag-and-drop card movement (within and across lists)
+- [x] rich-text card description editor with sanitized rendering
+- [x] attachment upload, download, delete UI
 
 ### 8. Tests and CI
 - [x] backend Jest + ts-jest config
@@ -68,7 +71,7 @@
 - [x] backend service behavior tests
 - [x] frontend Vitest render flow tests
 - [x] CI runs install, lint, tests, backend build, frontend build
-- [x] DB-backed integration tests for auth/workspace/board/card/comment flow
+- [x] DB-backed integration tests for auth, workspace, board, card, comment, reorder, cascade-delete flow
 
 ### 9. Deployment and Ops
 - [x] backend build works for Railway-style start
@@ -76,3 +79,4 @@
 - [x] frontend production build works
 - [x] local DB runbook documented
 - [x] production-style auth and socket verification command
+- [x] `UPLOAD_DIR` env var documented for attachment storage location

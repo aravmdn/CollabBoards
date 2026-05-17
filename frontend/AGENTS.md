@@ -11,32 +11,30 @@ Applies to `frontend/`.
 - Vite
 - Axios
 - Socket.IO client
+- @dnd-kit (sortable cards)
+- TipTap + DOMPurify (rich-text card descriptions)
 
 ## Important Paths
 
-- `src/App.tsx`: recovered core flow UI
-- `src/lib/api.ts`: backend base URL and auth header wiring
-- `src/lib/socket.ts`: singleton socket client
+- `src/App.tsx`: top-level shell, layout, board + card-detail wiring
+- `src/components/BoardView.tsx`: drag-and-drop lists/cards
+- `src/components/RichTextEditor.tsx`: TipTap editor + sanitized read view
+- `src/components/CardAttachments.tsx`: upload, download, delete UI
+- `src/components/WorkspaceMembers.tsx`: invite / role-change / remove
+- `src/lib/api.ts`: backend base URL and auth header wiring (use this — never raw `axios` or `fetch`)
+- `src/lib/socket.ts`: singleton socket client, event-name constants
 - `src/hooks/useAuth.ts`: token lifecycle
 - `src/hooks/useSocket.ts`: socket wrapper
-- `src/App.test.tsx`: current UI regression tests
+- `src/App.test.tsx`: UI regression tests
 
 ## Frontend Rules
 
-- No fake data in shipped path.
-- Keep API paths aligned with backend contract.
-- Keep socket refresh simple and explicit.
-- Prefer accessible labels on forms and card actions.
-- Keep UI scope honest. Do not imply rich-text, attachments, or drag-drop if not present.
-
-## Recovery Status
-
-- Login/register flow present.
-- Workspace and board selection present.
-- Lists, cards, comments render from live API.
-- Simple move-card action present.
-- Socket events trigger board refresh.
-- UI tests present for auth screen and logged-in board flow.
+- Route every API call through `src/lib/api.ts` so auth headers and refresh logic apply.
+- No fake or hard-coded data in shipped components — everything comes from the API.
+- Socket events trigger refetches, not optimistic in-place mutations (the one exception: `BoardView` optimistically reorders cards locally and rolls back on API failure).
+- Keep socket event names aligned with `backend/src/lib/socketEvents.ts`.
+- Card descriptions are HTML. Always render via `RichTextView` so DOMPurify sanitizes them.
+- Attachments must be served through `/api/attachments/:id/download` (auth-scoped blob fetch), not direct file URLs.
 
 ## Verification
 

@@ -1,10 +1,10 @@
-# CollabBoards — Remaining Tasks
+# CollabBoards — Tracking
 
-Check off each item as it is completed. When all items in a section are done, the section is complete.
+All shipped. Keep this list updated as new work arrives.
 
 ---
 
-## Frontend — Core UX gaps
+## Frontend — Core UX
 
 - [x] **Logout button** — visible logout action in the header
 - [x] **Card metadata UI** — displays `assigneeId`, `labels`, and `dueDate` on the card detail view
@@ -16,25 +16,23 @@ Check off each item as it is completed. When all items in a section are done, th
 - [x] **Edit board title/description** — rename from the board view (PATCH `/api/boards/:id`)
 - [x] **Delete board** — delete action from the board view (DELETE `/api/boards/:id`)
 - [x] **Edit/delete workspace** — rename and delete workspace from the sidebar (PATCH/DELETE `/api/workspaces/:id`)
-- [x] **Workspace member management UI** — invite members, change roles, remove members; all backend endpoints already exist under `/api/workspaces/:workspaceId/members`
+- [x] **Workspace member management UI** — invite members, change roles, remove members
+- [x] **Drag-and-drop card movement** — @dnd-kit; within list reorder + across-list move; PATCH `/api/cards/:id` with `listId + position`
+- [x] **Rich-text card descriptions** — TipTap editor; DOMPurify-sanitized rendering
+- [x] **Attachment upload UI** — multipart upload, download, delete on the card detail view
 
 ---
 
-## Backend — API gaps
+## Backend — API
 
 - [x] **Pagination on workspace list** — `page` and `limit` query params on `GET /api/workspaces`
 - [x] **Pagination on board list** — `page` and `limit` query params on `GET /api/workspaces/:workspaceId/boards`
-
----
-
-## Deferred features (implement only when explicitly asked)
-
-- [ ] Drag-and-drop card movement
-- [ ] Rich-text card editor
-- [ ] Attachment upload and management
+- [x] **Position renumbering on card move** — `PATCH /api/cards/:id` with `position` reorders the target list atomically
+- [x] **Attachment endpoints** — upload, list (per card), authenticated download, delete
+- [x] **Cascade deletes** — workspace → boards → lists → cards → (comments + attachments) cascade in schema
 
 ---
 
 ## Ops
 
-- [x] **Production smoke test** — lint + all 49 tests pass; `smoke:local` uses embedded-postgres which crashes on Windows (known limitation); CI runs full suite on Linux
+- [x] **Production smoke test** — lint + tests pass; CI runs full suite on Linux (embedded-postgres skips on Windows)

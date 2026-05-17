@@ -12,14 +12,15 @@ Applies to `backend/`.
 - Prisma
 - PostgreSQL
 - Socket.IO
+- multer (file uploads)
 
 ## Important Paths
 
 - `src/index.ts`: env validation, HTTP + socket startup
 - `src/app.ts`: Express wiring
 - `src/routes/`: mounted `/api/*` surface
-- `src/services/`: domain logic and query shape
-- `src/lib/socketEvents.ts`: broadcast helpers
+- `src/services/`: domain logic and query shape (incl. `attachmentService.ts`)
+- `src/lib/socketEvents.ts`: broadcast helpers and event-name constants
 - `prisma/schema.prisma`: source of truth for data model
 - `prisma/migrations/`: committed SQL history
 - `prisma/seed.cjs`: local seed data
@@ -29,20 +30,15 @@ Applies to `backend/`.
 
 - Keep route comments aligned with real mounted path.
 - Keep auth and workspace scoping explicit.
-- Add test before changing route contract or mutation behavior.
+- Add a test before changing route contract or mutation behavior.
 - Put business rules in services, not routes.
-- When schema changes, update migration and seed in same pass.
-- Real-time events must match REST mutations and README.
-
-## Recovery Status
-
-- Route prefix drift fixed for documented core REST paths.
-- Card metadata fields present in schema and route validation.
-- Jest route/service tests present.
-- DB-backed integration tests still missing.
+- When schema changes, update migration and seed in the same pass.
+- Real-time events must match REST mutations and `README.md`.
+- `cardService.updateCard` renumbers positions atomically when `position` or `listId` is in the input — don't bypass that path for reordering.
+- Uploaded files live under `UPLOAD_DIR` (default `backend/uploads/`). Always serve via the authenticated download endpoint; never expose the directory directly.
 
 ## Verification
 
 - `npm run build --workspace backend`
-- `npm test --workspace backend`
+- `npm test --workspace backend` (DB-backed integration suite runs on Linux; skipped on Windows due to embedded-postgres)
 - Manual smoke with valid env and PostgreSQL
