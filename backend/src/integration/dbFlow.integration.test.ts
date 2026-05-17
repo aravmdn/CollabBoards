@@ -184,6 +184,124 @@ describe('DB-backed API integration flow', () => {
     expect(deleteCommentResponse.status).toBe(204);
   });
 
+  it('reorders cards within a list via PATCH position', async () => {
+    const client = request(getHarness().app);
+    const register = await client.post('/api/auth/register').send({
+      email: 'reorder@example.com',
+      password: 'password123',
+    });
+    const auth = { Authorization: `Bearer ${register.body.accessToken}` };
+
+    const ws = await client.post('/api/workspaces').set(auth).send({ name: 'WS' });
+    const board = await client
+      .post(`/api/workspaces/${ws.body.id}/boards`)
+      .set(auth)
+      .send({ title: 'Board' });
+    const list = await client
+      .post(`/api/boards/${board.body.id}/lists`)
+      .set(auth)
+      .send({ title: 'Todo' });
+
+    const cardA = await client
+      .post(`/api/lists/${list.body.id}/cards`)
+      .set(auth)
+      .send({ title: 'A' });
+    const cardB = await client
+      .post(`/api/lists/${list.body.id}/cards`)
+      .set(auth)
+      .send({ title: 'B' });
+    const cardC = await client
+      .post(`/api/lists/${list.body.id}/cards`)
+      .set(auth)
+      .send({ title: 'C' });
+
+    expect(cardA.body.position).toBe(0);
+    expect(cardB.body.position).toBe(1);
+    expect(cardC.body.position).toBe(2);
+
+    // Move C to the front of the list
+    const reorder = await client
+      .patch(`/api/cards/${cardC.body.id}`)
+      .set(auth)
+      .send({ listId: list.body.id, position: 0 });
+
+    expect(reorder.status).toBe(200);
+
+    const boardAfter = await client
+      .get(`/api/boards/${board.body.id}`)
+      .set(auth);
+
+    const titles = boardAfter.body.lists[0].cards.map((c: { title: string }) => c.title);
+    expect(titles).toEqual(['C', 'A', 'B']);
+  });
+
+  it('cascades delete from card to comments and attachments', async () => {
+    const client = request(getHarness().app);
+    const register = await client.post('/api/auth/register').send({
+      email: 'cascade@example.com',
+      password: 'password123',
+    });
+    const auth = { Authorization: `Bearer ${register.body.accessToken}` };
+
+    const ws = await client.post('/api/workspaces').set(auth).send({ name: 'WS' });
+    const board = await client
+      .post(`/api/workspaces/${ws.body.id}/boards`)
+      .set(auth)
+      .send({ title: 'Board' });
+    const list = await client
+      .post(`/api/boards/${board.body.id}/lists`)
+      .set(auth)
+      .send({ title: 'Todo' });
+    const card = await client
+      .post(`/api/lists/${list.body.id}/cards`)
+      .set(auth)
+      .send({ title: 'With kids' });
+
+    await client
+      .post(`/api/cards/${card.body.id}/comments`)
+      .set(auth)
+      .send({ body: 'hi' });
+
+    const del = await client.delete(`/api/cards/${card.body.id}`).set(auth);
+    expect(del.status).toBe(204);
+
+    const fetchAfter = await client.get(`/api/cards/${card.body.id}`).set(auth);
+    expect(fetchAfter.status).toBe(404);
+  });
+
+  it('cascades delete from workspace through boards, lists, cards, comments', async () => {
+    const client = request(getHarness().app);
+    const register = await client.post('/api/auth/register').send({
+      email: 'cascade-ws@example.com',
+      password: 'password123',
+    });
+    const auth = { Authorization: `Bearer ${register.body.accessToken}` };
+
+    const ws = await client.post('/api/workspaces').set(auth).send({ name: 'WS' });
+    const board = await client
+      .post(`/api/workspaces/${ws.body.id}/boards`)
+      .set(auth)
+      .send({ title: 'Board' });
+    const list = await client
+      .post(`/api/boards/${board.body.id}/lists`)
+      .set(auth)
+      .send({ title: 'Todo' });
+    const card = await client
+      .post(`/api/lists/${list.body.id}/cards`)
+      .set(auth)
+      .send({ title: 'C1' });
+    await client
+      .post(`/api/cards/${card.body.id}/comments`)
+      .set(auth)
+      .send({ body: 'comment' });
+
+    const del = await client.delete(`/api/workspaces/${ws.body.id}`).set(auth);
+    expect(del.status).toBe(204);
+
+    const listAfter = await client.get('/api/workspaces').set(auth);
+    expect(listAfter.body.workspaces).toHaveLength(0);
+  });
+
   it('blocks non-members from reading workspace-scoped data', async () => {
     const client = request(getHarness().app);
     const consoleErrorSpy = jest

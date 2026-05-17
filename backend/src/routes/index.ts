@@ -5,6 +5,7 @@ import boardsRouter from './boards';
 import listsRouter from './lists';
 import cardsRouter from './cards';
 import commentsRouter from './comments';
+import { attachmentsRouter } from './attachments';
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use('/boards', boardsRouter);
 router.use('/lists', listsRouter);
 router.use('/cards', cardsRouter);
 router.use('/comments', commentsRouter);
+router.use('/attachments', attachmentsRouter);
 
 export default router;

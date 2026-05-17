@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { isAuthenticated, AuthenticatedRequest } from '../middleware/auth';
 import { getCardById, updateCard, deleteCard } from '../services/cardService';
+import { cardAttachmentsRouter } from './attachments';
 
 const router = Router();
 
@@ -126,6 +127,9 @@ router.post(
     }
   },
 );
+
+// Attachments for a card
+router.use('/:cardId/attachments', cardAttachmentsRouter);
 
 // GET /api/cards/:cardId/comments - Get all comments for a card
 router.get(

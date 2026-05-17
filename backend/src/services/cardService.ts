@@ -173,6 +173,34 @@ export async function getCardById(id: string, userId: string) {
   return card;
 }
 
+const CARD_INCLUDE = {
+  list: {
+    include: {
+      board: {
+        select: {
+          id: true,
+          title: true,
+          workspaceId: true,
+        },
+      },
+    },
+  },
+  assignee: {
+    select: {
+      id: true,
+      email: true,
+      name: true,
+    },
+  },
+  _count: {
+    select: {
+      comments: true,
+      attachments: true,
+      activities: true,
+    },
+  },
+} as const;
+
 export async function updateCard(
   id: string,
   input: UpdateCardInput,
@@ -180,22 +208,16 @@ export async function updateCard(
 ) {
   const existingCard = await requireCardMembership(id, userId);
 
-  // If moving to a different list, get max position in new list
-  let newPosition = input.position;
-  if (input.listId && input.listId !== existingCard.listId) {
-    const targetList = await requireListMembership(input.listId, userId);
+  const targetListId = input.listId ?? existingCard.listId;
+  const isCrossList = input.listId !== undefined && input.listId !== existingCard.listId;
+
+  if (isCrossList) {
+    const targetList = await requireListMembership(input.listId!, userId);
     if (targetList.workspaceId !== existingCard.workspaceId) {
       throw Object.assign(new Error('Card cannot move across workspaces'), {
         status: 400,
       });
     }
-
-    const maxPosition = await prisma.card.findFirst({
-      where: { listId: input.listId },
-      orderBy: { position: 'desc' },
-      select: { position: true },
-    });
-    newPosition = maxPosition ? maxPosition.position + 1 : 0;
   }
 
   await ensureWorkspaceAssignee(
@@ -203,44 +225,78 @@ export async function updateCard(
     existingCard.workspaceId,
   );
 
-  const updateData: UpdateCardInput = {
-    ...input,
-    position: newPosition,
-  };
+  const needsReorder =
+    input.position !== undefined || isCrossList;
 
-  const card = await prisma.card.update({
+  if (needsReorder) {
+    await prisma.$transaction(async (tx) => {
+      const siblings = await tx.card.findMany({
+        where: { listId: targetListId, id: { not: id } },
+        orderBy: { position: 'asc' },
+        select: { id: true },
+      });
+
+      const desiredPosition =
+        input.position !== undefined
+          ? Math.max(0, Math.min(input.position, siblings.length))
+          : siblings.length;
+
+      const orderedIds = [
+        ...siblings.slice(0, desiredPosition).map((c) => c.id),
+        id,
+        ...siblings.slice(desiredPosition).map((c) => c.id),
+      ];
+
+      const scalarUpdates: Record<string, unknown> = {};
+      if (input.title !== undefined) scalarUpdates.title = input.title;
+      if (input.description !== undefined) scalarUpdates.description = input.description;
+      if (input.dueDate !== undefined) scalarUpdates.dueDate = input.dueDate;
+      if (input.assigneeId !== undefined) scalarUpdates.assigneeId = input.assigneeId;
+      if (input.labels !== undefined) scalarUpdates.labels = input.labels;
+      if (isCrossList) scalarUpdates.listId = targetListId;
+
+      for (let i = 0; i < orderedIds.length; i++) {
+        const cardId = orderedIds[i];
+        await tx.card.update({
+          where: { id: cardId },
+          data:
+            cardId === id
+              ? { ...scalarUpdates, position: i }
+              : { position: i },
+        });
+      }
+
+      if (isCrossList) {
+        const sourceSiblings = await tx.card.findMany({
+          where: { listId: existingCard.listId },
+          orderBy: { position: 'asc' },
+          select: { id: true },
+        });
+        for (let i = 0; i < sourceSiblings.length; i++) {
+          await tx.card.update({
+            where: { id: sourceSiblings[i].id },
+            data: { position: i },
+          });
+        }
+      }
+    });
+  } else {
+    const scalarUpdates: Record<string, unknown> = {};
+    if (input.title !== undefined) scalarUpdates.title = input.title;
+    if (input.description !== undefined) scalarUpdates.description = input.description;
+    if (input.dueDate !== undefined) scalarUpdates.dueDate = input.dueDate;
+    if (input.assigneeId !== undefined) scalarUpdates.assigneeId = input.assigneeId;
+    if (input.labels !== undefined) scalarUpdates.labels = input.labels;
+    if (Object.keys(scalarUpdates).length > 0) {
+      await prisma.card.update({ where: { id }, data: scalarUpdates });
+    }
+  }
+
+  const card = await prisma.card.findUniqueOrThrow({
     where: { id },
-    data: updateData,
-    include: {
-      list: {
-        include: {
-          board: {
-            select: {
-              id: true,
-              title: true,
-              workspaceId: true,
-            },
-          },
-        },
-      },
-      assignee: {
-        select: {
-          id: true,
-          email: true,
-          name: true,
-        },
-      },
-      _count: {
-        select: {
-          comments: true,
-          attachments: true,
-          activities: true,
-        },
-      },
-    },
+    include: CARD_INCLUDE,
   });
 
-  // Create activity log entry for significant changes
   if (input.title && input.title !== existingCard.title) {
     await prisma.activityLog.create({
       data: {
@@ -251,7 +307,7 @@ export async function updateCard(
     });
   }
 
-  if (input.listId && input.listId !== existingCard.listId) {
+  if (isCrossList) {
     await prisma.activityLog.create({
       data: {
         type: 'CARD_MOVED',
@@ -259,10 +315,8 @@ export async function updateCard(
         cardId: card.id,
       },
     });
-    // Broadcast card moved event
     broadcastToBoard(card.list.board.id, SOCKET_EVENTS.CARD_MOVED, card);
   } else {
-    // Broadcast card updated event
     broadcastToBoard(card.list.board.id, SOCKET_EVENTS.CARD_UPDATED, card);
   }
 

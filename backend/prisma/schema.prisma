@@ -15,10 +15,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships WorkspaceMember[]
-  comments    Comment[]
-  activities  ActivityLog[]
-  assignedCards Card[] @relation("CardAssignee")
+  memberships       WorkspaceMember[]
+  comments          Comment[]
+  activities        ActivityLog[]
+  assignedCards     Card[]            @relation("CardAssignee")
+  uploadedAttachments Attachment[]    @relation("AttachmentUploader")
 }
 
 model Workspace {
@@ -39,8 +40,8 @@ model WorkspaceMember {
 
   userId      String
   workspaceId String
-  user        User       @relation(fields: [userId], references: [id])
-  workspace   Workspace  @relation(fields: [workspaceId], references: [id])
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, workspaceId])
 }
@@ -59,7 +60,7 @@ model Board {
   updatedAt   DateTime @updatedAt
 
   workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   lists       List[]
 }
@@ -72,7 +73,7 @@ model List {
   updatedAt DateTime @updatedAt
 
   boardId   String
-  board     Board    @relation(fields: [boardId], references: [id])
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
 
   cards     Card[]
 }
@@ -88,7 +89,7 @@ model Card {
   updatedAt   DateTime @updatedAt
 
   listId      String
-  list        List     @relation(fields: [listId], references: [id])
+  list        List     @relation(fields: [listId], references: [id], onDelete: Cascade)
   assigneeId  String?
   assignee    User?    @relation("CardAssignee", fields: [assigneeId], references: [id])
 
@@ -104,18 +105,23 @@ model Comment {
 
   cardId    String
   authorId  String
-  card      Card     @relation(fields: [cardId], references: [id])
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
   author    User     @relation(fields: [authorId], references: [id])
 }
 
 model Attachment {
-  id        String   @id @default(cuid())
-  url       String
-  name      String?
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  url          String
+  name         String?
+  mimeType     String?
+  size         Int?
+  createdAt    DateTime @default(now())
 
-  cardId    String
-  card      Card     @relation(fields: [cardId], references: [id])
+  cardId       String
+  card         Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  uploadedById String?
+  uploadedBy   User?    @relation("AttachmentUploader", fields: [uploadedById], references: [id])
 }
 
 model ActivityLog {
@@ -129,5 +135,3 @@ model ActivityLog {
   card      Card?    @relation(fields: [cardId], references: [id])
   user      User?    @relation(fields: [userId], references: [id])
 }
-
-

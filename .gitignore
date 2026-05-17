@@ -9,7 +9,6 @@ build
 coverage
 .DS_Store
 RECOVERY_ORCHESTRATOR_PROMPT.md
-AGENTS.md
-REQUIRMENTS.md
+backend/uploads/
 
 
