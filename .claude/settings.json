@@ -1,0 +1,5 @@
+{
+  "env": {
+    "PATH": "/c/Program Files/PostgreSQL/17/bin:${PATH}"
+  }
+}
